@@ -1,32 +1,270 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
-		<style>
-			* {
-				font-family: 'Roboto';
-			}
-		</style>
-		<title>
-			Restaurant Manager
-		</title>
-	</head>
-	<body>
-		<div id="app">
-			{ message }
-		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-		<script>
-			const app = new Vue({
-				el: '#app',
-				data: {
-					message: 'Hello Vue!'
-				},
-				delimiters: ['{', '}'],
-			});
-		</script>
-	</body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        * {
+            font-family: 'Roboto';
+        }
+
+        #app {
+            width: 90%;
+            margin: auto;
+        }
+
+        p {
+            text-align: center;
+        }
+
+        .restaurant {
+            height: 323px;
+            border: red;
+            border-style: groove;
+            padding: 28px;
+            margin: 7px;
+            display: block;
+            width: 965px;
+        }
+
+        .table {
+            float: left;
+            border: #d6c7eb;
+            border-style: groove;
+            padding: 10px;
+            margin: 7px;
+            width: 200px;
+            height: 120px;
+        }
+
+        .new-party-form {
+            margin: auto;
+            padding: 30px;
+        }
+
+        .input {
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 18px;
+            padding: 5px;
+        }
+
+        .button {
+            width: 75px;
+            background-color: #e8e8e8;
+            border: none;
+            padding-bottom: 7px;
+            text-align: center;
+            padding-top: 7px;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+
+        .evict-btn {
+            background-color: #e2c1e8;
+        }
+
+        .available {
+            background-color: #faf4fb;
+        }
+
+    </style>
+    <title>
+        Restaurant Manager
+    </title>
+</head>
+<body style="padding: 25px;">
+<div id="app">
+
+    <h2>Restaurant Manager</h2>
+    <br/>
+
+    <x-restaurant ref="restaurantComponent"></x-restaurant>
+
+    <div style="">
+        <form class="new-party-form">
+
+            <h2> New Party </h2>
+            <span style="font-size: 18px"> Fill the following form to allocate a table to a party that is waiting to be seated. </span>
+            <br/><br/>
+
+            <input class="input" type="text" placeholder="Number of people" v-model="new_party_form.occupants"/>
+            <input class="input" type="text" placeholder="Duration of stay" v-model="new_party_form.occupied_duration"/>
+            <input class="input" type="text" placeholder="Fuss message" v-model="new_party_form.fuss_message"/>
+
+            <input @click="submitNewPartyForm" class="button" type="button" value="Add" style="float: right"/>
+        </form>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+<script id="x-restaurant" type="text/x-template">
+    <div class="restaurant">
+        <x-table v-for="table in tables" v-bind="table" :ref="'table_'+ table.id"
+                 @makeTableAvaliable="makeTableAvaliable"></x-table>
+    </div>
+</script>
+
+<script id="x-table" type="text/x-template">
+    <div class="table" :class="{ available : available }">
+        <p id="mainLabel" v-html="mainLabel"></p>
+        <p>
+            <button @click="evictTimer" class="button evict-btn" v-if="!available"> Evict</button>
+        </p>
+    </div>
+</script>
+
+<script>
+
+    Vue.component('x-table', {
+        template: '#x-table',
+        props: {
+            id: Number,
+            available: Boolean,
+            capacity: Number,
+            occupants: Number
+        },
+        data() {
+            return {
+                count_down_left_time: "",
+                timerId: '',
+                _untilAvailable: null,
+				evicted:false,
+                seconds: 0
+            }
+        },
+        methods: {
+            async startTimer(seconds) {
+                this.seconds = seconds;
+                this._untilAvailable = new Promise(resolve => {
+                    this.timerId = setInterval(() => {
+                        if (this.seconds && !this.evicted) {
+                            this.seconds--;
+                            // change z seconds to human readable
+                            this.count_down_left_time = new Date(this.seconds * 1000).toISOString().substr(14, 5);
+                        } else {
+                            resolve(this.getTableDetail());
+                            // emit an event
+                            this.$emit('makeTableAvaliable', {id: this.id, evicted: this.evicted});
+                            clearInterval(this.timerId);
+                        }
+                    }, 1000);
+                });
+            },
+            evictTimer() {
+                this.evicted = true;
+            },
+            async untilAvailable() {
+                return this.available ? this.getTableDetail() : await this._untilAvailable;
+            },
+            getTableDetail() {
+				// return object for promises after resolved
+                return (({id, available, capacity, occupants}) => ({
+                    id, available, capacity, occupants
+                }))(this.$props);
+            }
+        },
+        computed: {
+            mainLabel() {
+                return this.available ? `Table Available  <p> ( Capacity = ${this.capacity}) </p> ` :
+                    `Occupied by ${this.occupants}
+								<p> ( free in  ${this.count_down_left_time} ) </p> `;
+            }
+        },
+        delimiters: ['{', '}'],
+    });
+
+    Vue.component('x-restaurant', {
+        template: '#x-restaurant',
+        data() {
+            return {
+                default_table_capacities: [10, 8, 10, 6, 2, 6, 4, 12],
+                TABLE_STATES: {AVAILABLE: 'available', OCCUPIED: 'occupied'},
+                tables: [],
+            }
+        },
+        methods: {
+            occupyTable(new_party_form) {
+
+                // sort with capacity
+                let sorted_tables = [...this.tables].sort((a, b) => a.capacity - b.capacity);
+
+                for (let table of sorted_tables) {
+                    if (table.capacity >= new_party_form.occupants && table.available) {
+                        this.tables[table.id].available = false;
+                        this.tables[table.id].occupants = parseInt(new_party_form.occupants);
+                        this.tables[table.id].fuss_message = new_party_form.fuss_message;
+                        this.$refs[`table_${table.id}`][0].startTimer(parseInt(new_party_form.occupied_duration));
+                        this.$forceUpdate(); // trigger vue to detect deep changes
+                        return;
+                    }
+                }
+                alert('Table Not available');
+            },
+            makeTableAvaliable(table_status) {
+                this.tables[table_status.id].available = true;
+                if (table_status.evicted) alert(this.tables[table_status.id].fuss_message);
+                this.$forceUpdate(); // trigger vue to detect deep changes
+            },
+            async awaitTable(table_size) {
+                let promises = [];
+                this.tables.forEach((table, indx) => {
+                    if (table.capacity >= table_size) {
+                        promises.push(this.$refs[`table_${indx}`][0].untilAvailable());
+                    }
+                });
+                return await Promise.race(promises);
+            },
+            save(key) {
+                localStorage.setItem(key, JSON.stringify(this.tables));
+            },
+            load(key) {
+                this.tables = JSON.parse(localStorage.getItem(key));
+            }
+
+        },
+        beforeMount() {
+            this.default_table_capacities.forEach((x, indx) => {
+                // i am using indexed array for efficient access later. But it entails to trigger forceUpdate on changes.
+                this.tables[indx] = {
+                    id: indx,
+                    capacity: x,
+                    available: true
+                };
+            });
+        },
+        delimiters: ['{', '}'],
+    });
+
+    const app = new Vue({
+        el: '#app',
+        data: {
+            new_party_form: {
+                occupants: null,
+                occupied_duration: null,
+                fuss_message: ''
+            }
+        },
+        methods: {
+            submitNewPartyForm() {
+                if (!this.new_party_form.occupants || !this.new_party_form.occupied_duration) return;
+                this.$refs.restaurantComponent.occupyTable(this.new_party_form);
+                this.resetForm();
+            },
+            resetForm() {
+                this.new_party_form = {
+                    occupants: null,
+                    occupied_duration: null,
+                    fuss_message: ''
+                }
+            }
+        },
+        delimiters: ['{', '}'],
+    });
+
+</script>
+</body>
 </html>
