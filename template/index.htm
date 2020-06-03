@@ -1,32 +1,199 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
-		<style>
-			* {
-				font-family: 'Roboto';
-			}
-		</style>
-		<title>
-			Restaurant Manager
-		</title>
-	</head>
-	<body>
-		<div id="app">
-			{ message }
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="main.css">
+	<style>
+		* {
+			font-family: 'Roboto';
+		}
+	</style>
+	<title>
+		Restaurant Manager
+	</title>
+</head>
+
+<body>
+	<div id="app">
+		<div class="restaurant__wrapper">
+			<h1 class="restaurant__headeing">Restaurant Manager</h1>
+			<p>Table Overview</p>
+			<x-restaurant ref="xRestaurant"></x-restaurant>
+
+			<div class="restaurant__form">
+				<h1>New Party</h1>
+				<p>Fill the following form to allocate table to a party that is waiting to be seated.</p>
+				<div>
+					<form action="">
+						<div>
+							<label for="number_of_people">
+								<input type="number" v-model="newParty.numberOfOccupant"
+									placeholder="Number of people(non-zero positive integer">
+							</label>
+						</div>
+						<div>
+							<label for="duration">
+								<input type="number" v-model="newParty.durationOfStay"
+									placeholder="duration of stay in seconds(positive number)">
+							</label>
+						</div>
+
+						<div>
+							<label for="fuss_message">
+								<input type="text" v-model="newParty.fussMessage" placeholder="Fuss message if evicted(text)">
+							</label>
+						</div>
+						<button class="btn add" @click="addNewParty">Add</button>
+					</form>
+				</div>
+			</div>
 		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-		<script>
-			const app = new Vue({
-				el: '#app',
-				data: {
-					message: 'Hello Vue!'
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+	<script>
+
+		Vue.component('x-table', {
+			props: {
+				table: Object
+			},
+			data() {
+				return {
+					seconds: 0,
+					countDown: '',
+					timeLeft: '',
+					evicted: false,
+					waitToAvailable: null
+				}
+			},
+			template: `<div class="restaurant__table" :class="!table.available ? 'available': '' "><div v-if="!table.available"><p>Occupied by {{table.numberOfOccupant}}</p><p>(free in {{timeLeft}})</p><button class="btn available__btn" @click="evictOccupants">Evict</button></div> <div v-else><p>Table Available</p><p>(capacity = {{table.capacity}})</p></div></div>`,
+
+			methods: {
+				async setTimer(seconds) {
+					this.seconds = seconds
+					this._untilAvailable = new Promise(resolve => {
+						this.countDown = setInterval(() => {
+							if (this.seconds > 0 && !this.evicted) {
+								this.seconds--;
+								this.timeLeft = new Date(this.seconds * 1000).toISOString().substr(14, 5);
+
+							} else {
+								resolve(this.table);
+								// emit an event
+								this.$emit('makeTableAvailable', { id: this.table.id, evicted: this.evicted });
+								clearInterval(this.countDown);
+							}
+						}, 1000);
+					});
 				},
-				delimiters: ['{', '}'],
-			});
-		</script>
-	</body>
+
+				async untilAvailable() {
+					return this.table.available ? this.table : await this.waitToAvailable;
+				},
+
+				evictOccupants() {
+					this.evicted = true;
+				},
+
+			},
+
+		});
+
+		Vue.component('x-restaurant', {
+			data() {
+				return {
+					defaultTableCapacities: [10, 8, 10, 6, 2, 6, 4, 12],
+					tableCapacities: []
+				}
+			},
+			template: `<div class="restaurant__container">
+					<x-table v-for="(table, key) in tableCapacities" :key="key" :table="table" :ref="'table' + key" @makeTableAvailable="makeTableAvailable"></x-table>
+		    </div >`,
+
+			methods: {
+				addOccupants(newParty) {
+					let sortedTableCapacities = [...this.tableCapacities].sort((curr, next) => curr.capacity - next.capacity);
+					for (let table of sortedTableCapacities) {
+						if (table.capacity >= newParty.numberOfOccupant && table.available) {
+							this.tableCapacities[table.id].available = false;
+							this.tableCapacities[table.id].numberOfOccupant = parseInt(newParty.numberOfOccupant);
+							this.tableCapacities[table.id].fussMessage = newParty.fussMessage;
+							this.$refs[`table${table.id}`][0].setTimer(parseInt(newParty.durationOfStay));
+							this.$forceUpdate();
+							return;
+						}
+					}
+					alert('Table Not available');
+				},
+
+				makeTableAvailable(table) {
+					const tableCap = this.tableCapacities.find(cap => cap.id === table.id)
+					tableCap.available = true;
+					if (table.evicted) alert(tableCap.fussMessage);
+					this.$forceUpdate();
+				},
+			},
+
+			created() {
+				this.tableCapacities = this.defaultTableCapacities.map((capacity, idx) => ({
+					capacity,
+					id: idx,
+					available: true
+				}));
+			},
+
+			async awaitTable(tableSize) {
+				let promise = [];
+				this.tableCapacities.forEach((table, indx) => {
+					if (table.capacity >= table_size) {
+						promise.push(this.$refs[`table${indx}`][0].untilAvailable());
+					}
+				});
+				return await Promise.race(promise);
+			},
+
+			save(key) {
+				localStorage.setItem(key, JSON.stringify(this.tableCapacities));
+			},
+
+			load(key) {
+				this.tableCapacities = JSON.parse(localStorage.getItem(key));
+			}
+		});
+
+		const app = new Vue({
+			el: '#app',
+			data: {
+				newParty: {
+					numberOfOccupant: null,
+					durationOfStay: null,
+					fussMessage: ''
+				}
+			},
+
+			methods: {
+				addNewParty(event) {
+					event.preventDefault()
+					if (!this.newParty.numberOfOccupant || !this.newParty.durationOfStay) return;
+					this.$refs.xRestaurant.addOccupants(this.newParty)
+					this.clearForm()
+				},
+
+				clearForm() {
+					this.newParty = {
+						numberOfOccupant: null,
+						durationOfStay: null,
+						fussMessage: ''
+					}
+				}
+			},
+
+			delimiters: ['{', '}'],
+		});
+	</script>
+</body>
+
 </html>
