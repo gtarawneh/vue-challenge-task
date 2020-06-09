@@ -10,6 +10,43 @@
 			* {
 				font-family: 'Roboto';
 			}
+
+			#app {
+				max-width: 976px;
+				margin: auto auto;
+			}
+
+			.table-container {
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				align-items: center;
+				min-height: 10em;
+				padding: 20px;
+
+				border: 2px #a681ce solid;
+			}
+
+			.table-message {
+				width: 100%;
+			}
+
+			.table-action {
+				width: 100%;
+				min-height: 2em;
+				background-color: #8c59c2;
+				color: white;
+				border: 0;
+			}
+
+			.restaurant-container {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr 1fr;
+				grid-gap: 10px;
+				padding: 30px;
+
+				border: 2px red solid;
+			}
 		</style>
 		<title>
 			Restaurant Manager
@@ -17,14 +54,43 @@
 	</head>
 	<body>
 		<div id="app">
-			{ message }
+			<x-restaurant></x-restaurant>
+			<div class="form">Ima form!</div>
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
+			Vue.component('x-table', {
+				data: function () {
+					return {
+						capacity: 1
+					}
+				},
+				template: '<div class="table-container">' +
+						'<span class="table-message">{{capacity}}</span>' +
+						'<button class="table-action">Evict</button>' +
+						'</div>'
+			})
+
+			Vue.component('x-restaurant', {
+				data: function () {
+					return {
+						count: 0
+					}
+				},
+				template: '<div class="restaurant-container">' +
+							'<x-table></x-table>' +
+							'<x-table></x-table>' +
+							'<x-table></x-table>' +
+							'<x-table></x-table>' +
+							'<x-table></x-table>' +
+							'<x-table></x-table>' +
+						'</div>'
+			})
+
 			const app = new Vue({
 				el: '#app',
 				data: {
-					message: 'Hello Vue!'
+
 				},
 				delimiters: ['{', '}'],
 			});
