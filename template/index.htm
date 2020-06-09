@@ -94,12 +94,14 @@
 					isOccupied: { type: Boolean, required: true },
 					occupiedBy: { type: Number, required: false },
 					capacity: { type: Number, required: true },
+					fussMessage: { type: String, required: false },
 				},
 				data: function () {
 					return {
 						timerToDisplay: '00:00', // mm:ss
 						$isAvailable: undefined, // Promise for table availability
-						timer: undefined // Refresh timer for updating timer on view
+						timer: undefined, // Refresh timer for updating timer on view
+						promiseOutsideCall: undefined // You might regret it, but I did not find the right way
 					}
 				},
 				created() {
@@ -108,20 +110,26 @@
 				beforeDestroy () {
 					this.dropTimer();
 				},
-				mounted: function () {
-					this.startTimer();
-				},
 
 				methods: {
 					occupy() {
 						this.startTimer();
+						this.$isAvailable = new Promise(resolve => {
+							this.promiseOutsideCall = resolve;
+						})
 					},
 					async untilAvailable() {
-						// TODO: $isAvailable
 						return !this.isOccupied ? this.getDetails() : await this.$isAvailable;
 					},
-					freeTable () {
+					evict() {
+						this.freeTable();
+						if (this.fussMessage) {
+							alert(this.fussMessage);
+						}
+					},
+					freeTable() {
 						this.dropTimer();
+						this.promiseOutsideCall();
 						this.$emit('freeTable')
 					},
 					startTimer() {
@@ -149,7 +157,7 @@
 						}
 					},
 					getDetails() {
-						// TODO: implement me!
+						return {...this.$props};
 					},
 
 				},
@@ -157,7 +165,7 @@
 				template: `
 					<div v-if="isOccupied" class="table-container active">
 						<span class="table-message">Occupied by {{occupiedBy}} <br/> (free in {{timerToDisplay}})</span>
-						<button class="table-action" @click="freeTable()">Evict</button>
+						<button class="table-action" @click="evict()">Evict</button>
 					</div>
 					<div v-else class="table-container">
 						<span class="table-message">Table Available <br/> (capacity = {{capacity}})</span>
@@ -178,12 +186,12 @@
 				methods: {
 					occupyTable(formData) {
 						const preferableTable = this.tables
-								.filter(table => table.capacity >= formData.occupantsNumber)
+								.filter(table => table.capacity >= formData.occupantsNumber && table.isOccupied === false)
 								.sort((a, b) => a.capacity - b.capacity)
 								[0];
 
 						if (preferableTable === undefined) {
-							alert("Sorry, you company is so big, that we can not seat you to one table.");
+							alert("Sorry, we don't have a table for you.");
 							return;
 						}
 						let table = this.tables.filter(t => t.id === preferableTable.id)[0];
@@ -198,13 +206,15 @@
 						table.isOccupied = false;
 						table.occupiedBy = undefined;
 						table.endTime = undefined;
-						alert("Table" + table.id + " has become available");
 					},
 					save(key) {
 						localStorage.setItem(key, JSON.stringify(this.tables))
 					},
 					load(key) {
-						// TODO: implement me!
+						let loadedState = localStorage.getItem(key);
+						if (!loadedState) return;
+						loadedState = JSON.parse(loadedState);
+						this.tables = loadedState;
 					},
 					async awaitTable(occupants) {
 						const $tablePromises = [];
@@ -240,6 +250,7 @@
 								':is-occupied="table.isOccupied" ' +
 								':occupied-by="table.occupiedBy"' +
 								':end-time="table.endTime"' +
+								':fuss-message="table.fussMessage"' +
 								'@freeTable="tableBecomeAvailable(table)">' +
 							'</x-table>' +
 						'</div>'
