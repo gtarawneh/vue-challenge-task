@@ -63,38 +63,27 @@
 			Vue.component('x-table', {
 				props: {
 					id: { type: Number, required: true },
-					initialTimer: { type: Number, required: true }, //in seconds
+					endTime: {type: Date, required: true},
 					isOccupied: { type: Boolean, required: true },
 					occupiedBy: { type: Number, required: true },
 					capacity: { type: Number, required: true },
 				},
 				data: function () {
 					return {
-						timerCountdown: this.initialTimer,
 						timer: undefined, //Timeout timer
-						timerToDisplay: '00:00' // mm:ss
+						timerToDisplay: '00:00', // mm:ss
 					}
 				},
 				created() {
-					this.updateTimerToDisplay();
-				},
-				watch: {
-					timerCountdown: {
-						handler(value) {
-							if (this.timerCountdown > 0) {
-								this.timer = setTimeout(() => {
-									this.timerCountdown--;
-									this.updateTimerToDisplay();
-								}, 1000);
-							} else {
-								this.freeTable();
-							}
-						},
-						immediate: true // This ensures the watcher is triggered upon creation
-					}
+					this.updateTimer();
 				},
 				beforeDestroy () {
 					this.dropTimer();
+				},
+				mounted: function () {
+					window.setInterval(() => {
+						this.updateTimer();
+					}, 1000)
 				},
 
 				methods: {
@@ -106,13 +95,19 @@
 						clearInterval(this.timer);
 						this.timerToDisplay = undefined;
 					},
-					updateTimerToDisplay() {
-						const minutes = Math.floor(this.timerCountdown / 60);
-						const seconds = this.timerCountdown - minutes * 60;
+					updateTimer() {
+						const secondsToEnd = Math.floor((this.endTime - new Date()) / 1000);
+
+						const minutes = Math.floor(secondsToEnd / 60);
+						const seconds = secondsToEnd - minutes * 60;
 						// Add '0' before number, if it less than 10;
 						let fancyMinutes = ('0' + minutes).slice(-2);
 						let fancySeconds = ('0' + seconds).slice(-2);
 						this.timerToDisplay = fancyMinutes + ':' + fancySeconds;
+
+						if (secondsToEnd === 0) {
+							this.freeTable();
+						}
 					}
 
 				},
@@ -134,8 +129,8 @@
 					}
 				},
 				template: '<div class="restaurant-container">' +
-							'<x-table :id="1" :capacity="5" :is-occupied="true" :occupied-by="3" :initial-timer="10"></x-table>' +
-							'<x-table :id="2" :capacity="3" :is-occupied="true" :occupied-by="5" :initial-timer="5"></x-table>' +
+							'<x-table :id="1" :capacity="5" :is-occupied="true" :occupied-by="3" :end-time="new Date(new Date().getTime() + 60000)"></x-table>' +
+							'<x-table :id="2" :capacity="3" :is-occupied="true" :occupied-by="5" :end-time="new Date(new Date().getTime() + 5000)"></x-table>' +
 						'</div>'
 			})
 
