@@ -154,13 +154,14 @@
 
 				},
 
-				template: '<div v-if="isOccupied" class="table-container active">' +
-							'<span class="table-message">Occupied by {{occupiedBy}} <br/> (free in {{timerToDisplay}})</span>' +
-							'<button class="table-action">Evict</button>' +
-						'</div>' +
-						'<div v-else class="table-container">' +
-							'<span class="table-message">Table Available <br/> (capacity = {{capacity}})</span>' +
-						'</div>'
+				template: `
+					<div v-if="isOccupied" class="table-container active">
+						<span class="table-message">Occupied by {{occupiedBy}} <br/> (free in {{timerToDisplay}})</span>
+						<button class="table-action" @click="freeTable()">Evict</button>
+					</div>
+					<div v-else class="table-container">
+						<span class="table-message">Table Available <br/> (capacity = {{capacity}})</span>
+					</div>`
 
 			})
 
