@@ -9,6 +9,38 @@
 			* {
 				font-family: 'Roboto';
 			}
+
+			.new-party-form {
+				display: flex;
+				flex-direction: column;
+				max-width: 300px;
+			}
+
+			.form-input {
+				margin: 6px 0;
+			}
+
+			.form-submit {
+				max-width: 50px;
+				justify-content: flex-end;
+			}
+
+			.table {
+				display: flex;
+				align-items: center;
+				text-align: center;
+				width: 125px;
+				height: 125px;
+				border: 1px solid #000000;
+				margin: 6px 6px;
+			}
+
+			.tables-container {
+				width: 600px;
+				height: auto;
+				display: flex;
+				flex-wrap: wrap;
+			}
 		</style>
 		<title>
 			Restaurant Manager
@@ -16,14 +48,195 @@
 	</head>
 	<body>
 		<div id="app">
-			{ message }
+			<h1 style="font-weight: normal">Restaurant Manager</h1>
+			<x-restaurant ref="restaurant" :tables="tables"></x-restaurant>
+			<h2>New Party</h2>
+			<p>Fill the following form to allocate a table to a party that is waiting to be seated.</p>
+			<div class="new-party-form">
+				<input v-model="party.numberOfPeople" type="number" class="form-input" placeholder="Number of People" />
+				<input v-model="party.durationOfStay" type="number" class="form-input" placeholder="Duration of Stay" />
+				<input v-model="party.evictMessage" class="form-input" placeholder="Fuss message if evicted" />
+				<button v-on:click="addParty" class="form-submit">Add</button>
+			</div>
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
+			const Utils = {
+				formatSeconds: (value) => {
+					const minutes = Math.floor(value / 60);
+					let seconds = value % 60;
+
+					if (seconds < 10) {
+						seconds = `0${seconds}`;
+					}
+
+					return `${minutes}:${seconds}`;
+				},
+				ascSortBy: (property) => (a, b) => a[property] - b[property],
+			};
+
+			const TableComponent = {
+				template: `
+					<div class="table">
+						<div v-if="isAvailable">
+							<div>Table available (capacity = {{capacity}})</div>
+						</div>
+						<div v-else>
+							<div>Occupied by {{party.numberOfPeople}} (free in {{formattedDuration}})</div>
+							<button v-on:click="onEvict" style="margin-top: 6px">Evict</button>
+						</div>
+					</div>
+				`,
+				props: {
+					capacity: Number,
+				},
+				data: () => ({
+					isAvailable: true,
+					isBooked: false,
+					party: null,
+					formattedDuration: '',
+				}),
+				methods: {
+					seatParty (party) {
+						this.isAvailable = false;
+						this.party = party;
+					},
+					onEvict () {
+						alert(this.party.evictMessage);
+						this.emptyTable();
+					},
+					emptyTable () {
+						this.isAvailable = true;
+						this.party = null;
+					},
+					async untilAvailable () {
+						return new Promise(resolve => {
+							const interval = setInterval(() => {
+								if (this.isAvailable) {
+									resolve(this);
+									this.isBooked = false;
+									clearInterval(interval);
+								} else {
+									this.isBooked = true;
+								}
+							}, 1000)
+						});
+					},
+				},
+				watch: {
+					party: {
+						handler(value) {
+							if (!value) return;
+
+							this.formattedDuration = Utils.formatSeconds(value.durationOfStay);
+							if (value.durationOfStay > 0) {
+								setTimeout(() => value.durationOfStay--, 1000);
+							} else {
+								this.emptyTable();
+							}
+						},
+						deep: true
+					},
+				}
+			};
+
+			const RestaurantComponent = {
+				template: `
+					<div>
+						<h2>Table Overview</h2>
+						<div class="tables-container">
+							<x-table ref="tables"
+									 v-for="table in tables"
+									 :capacity="table.capacity"
+							/>
+						</div>
+					</div>
+				`,
+				props: {
+					tables: Array,
+				},
+				mounted() {
+					window.addEventListener('beforeunload', this.save)
+					this.load();
+				},
+				methods: {
+					async awaitTable (numberOfPeople) {
+						const { tables } = this.$refs;
+						if (tables.every(t => t.capacity < numberOfPeople)) {
+							alert(`Sorry, we don't have table for so many people`);
+							return;
+						}
+
+						const availableTable = tables
+								.filter(t => t.isAvailable)
+								.sort(Utils.ascSortBy('capacity'))
+								.find(t => t.capacity >= numberOfPeople);
+
+						if (availableTable) {
+							return availableTable;
+						}
+
+						alert('Wait until table is available')
+
+						const awaitedTable = tables
+								.filter(t => t.capacity >= numberOfPeople)
+								.filter(t => !t.isBooked)
+								.sort(Utils.ascSortBy('durationOfStay'))[0];
+
+						return await awaitedTable.untilAvailable();
+					},
+					save () {
+						const { tables } = this.$refs;
+						const restaurantState = tables
+								.filter(t => !t.isAvailable)
+								.map(t => ({
+									_uid: t._uid,
+									numberOfPeople: t.party.numberOfPeople,
+									durationOfStay: t.party.durationOfStay,
+									evictMessage: t.party.evictMessage
+								}));
+						localStorage.setItem('restaurantState', JSON.stringify(restaurantState));
+					},
+					load () {
+						const { tables } = this.$refs;
+						const restaurantState = JSON.parse(localStorage.getItem('restaurantState'));
+
+						tables.forEach(t => {
+							const party = restaurantState.find(party => t._uid === party._uid);
+							party && t.seatParty(party);
+						});
+					}
+				},
+				components: {
+					'x-table': TableComponent
+				},
+			};
+
 			const app = new Vue({
 				el: '#app',
-				data: {
-					message: 'Hello Vue!'
+				components: {
+					'x-restaurant' : RestaurantComponent
+				},
+				data: () => ({
+					party: {},
+					partiesInLine: [],
+					tables: [
+						{capacity: 10},
+						{capacity: 8},
+						{capacity: 10},
+						{capacity: 6},
+						{capacity: 2},
+						{capacity: 6},
+						{capacity: 4},
+						{capacity: 12},
+					],
+				}),
+				methods: {
+					async addParty () {
+						this.partiesInLine.push({...this.party});
+						const table = await this.$refs.restaurant.awaitTable(this.party.numberOfPeople);
+						table && table.seatParty(this.partiesInLine.shift());
+					},
 				},
 				delimiters: ['{', '}'],
 			});
