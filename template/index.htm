@@ -1,32 +1,267 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
-		<style>
-			* {
-				font-family: 'Roboto';
-			}
-		</style>
-		<title>
-			Restaurant Manager
-		</title>
-	</head>
-	<body>
-		<div id="app">
-			{ message }
-		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-		<script>
-			const app = new Vue({
-				el: '#app',
-				data: {
-					message: 'Hello Vue!'
-				},
-				delimiters: ['{', '}'],
-			});
-		</script>
-	</body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Roboto';
+        }
+
+        #app {
+            width: 38em;
+            margin: auto 0;
+        }
+
+        .table {
+            border: #b88795 solid 2px;
+            margin: 1em;
+            width: 5em;
+            height: 5em;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table .status {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table .status .details {
+            font-size: 0.7em;
+        }
+
+        .restaurant {
+            border: red solid 1px;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 5px;
+        }
+
+        .form {
+            margin-top: 2em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form input {
+            margin: 0.5em 0;
+        }
+    </style>
+    <title>
+        Restaurant Manager
+    </title>
+</head>
+<body>
+<div id="app">
+    <x-restaurant ref="restaurant"></x-restaurant>
+
+    <form class="form" @submit.prevent="addParty">
+        <h3>New Party</h3>
+        <p>Fill the following form to allocate a table to a party that is waiting to be seated.</p>
+        <input v-model="peopleNumber" type="number" min=0 placeholder="Number of People (non-zero positive integer)">
+        <input v-model="stayDuration" type="number" min=1 placeholder="Duration of stay in seconds (positive number)">
+        <input v-model="fussMessage" type="text" placeholder="Fuss message if evicted (text)">
+        <input type="submit" value="Add">
+    </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+    Vue.component('x-table', {
+        props: ['capacity', 'evictCallback'],
+        data: function () {
+            return {
+                numberOccupiers: 0,
+                timeout: 0,
+                fussMessage: '',
+                timeLeftMessage: '',
+                timer: undefined
+            }
+        },
+        methods: {
+            evictHandler() {
+                this.evictCallback(this);
+            },
+            cleanTable() {
+                this.numberOccupiers = 0;
+                this.timeout = 0;
+                this.fussMessage = '';
+            },
+            placePeople(peopleNumber, stayDuration, fussMessage) {
+                this.numberOccupiers = peopleNumber;
+                this.timeout = Date.now() + stayDuration * 1000;
+                this.fussMessage = fussMessage;
+                this.startTimer();
+            },
+            update() {
+                const leftTime = this.timeout - Date.now();
+                if (leftTime > 0) {
+                    const seconds = Math.floor(leftTime / 1000 % 60);
+                    const minutes = Math.floor(leftTime / (1000 * 60));
+                    this.timeLeftMessage = `${minutes}:${(seconds < 10) ? '0' + seconds : seconds}`
+                } else {
+                    this.evictHandler()
+                }
+            },
+            startTimer() {
+                this.timer = setInterval(this.update, 1000);
+                this.update();
+            },
+            stopTimer() {
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = undefined;
+                }
+            },
+            getState() {
+                return {
+                    numberOccupiers: this.numberOccupiers,
+                    timeout: this.timeout,
+                    fussMessage: this.fussMessage
+                }
+            },
+            setState({numberOccupiers, timeout, fussMessage}) {
+                this.numberOccupiers = numberOccupiers;
+                this.timeout = timeout;
+                this.fussMessage = fussMessage;
+                this.startTimer();
+            }
+        },
+        computed: {
+            isAvailable: {
+                cache: false,
+                get() {
+                    return this.numberOccupiers === 0
+                }
+            }
+        },
+        template: `
+            <div class="table">
+                <div class="status">
+                    <template v-if="isAvailable">
+                        <span>Table Available</span>
+                        <span class="details">(capacity = {capacity})</span>
+                    </template>
+                    <template v-else>
+                        <span>Occupied by {numberOccupiers}</span>
+                        <span class="details timer">(free in {timeLeftMessage})</span>
+                    </template>
+                </div>
+                <button v-if="!isAvailable" @click.prevent="evictHandler">Evict</button>
+            </div>
+        `,
+        delimiters: ['{', '}']
+    })
+
+
+    Vue.component('x-restaurant', {
+        name: 'x-restaurant',
+        data: function () {
+            return {
+                tablesCapacities: [10, 8, 10, 6, 2, 6, 4, 12]
+            }
+        },
+        methods: {
+            awaitTable(count) {
+                if (count <= 0) throw 'too less people!'
+
+                const tables = this.getTables()
+                    .filter(table => table.capacity >= count);      // filter of available capacity
+                if (tables.length === 0) {
+                    throw 'too many people!'
+                }
+
+                let availableTables = tables
+                    .filter(table => table.isAvailable)             // filter of not occupied tables
+                    .sort(function (table1, table2) {               // sort by capacity
+                        return table1.capacity - table2.capacity
+                    });
+
+                if (availableTables.length > 0) {
+                    return availableTables[0];
+                }
+                throw 'has not available tables!';
+            },
+            getTables() {
+                return this.$refs.table;
+            },
+            evictCallback(table) {
+                if (table.fussMessage.length > 0) {
+                    alert(table.fussMessage);
+                }
+                table.stopTimer();
+                table.cleanTable();
+                this.save()
+            },
+            save() {
+                const tables = this.getTables();
+                let tablesDetails = [];
+                for (let table of tables) {
+                    tablesDetails.push(table.getState())
+                }
+                localStorage.setItem('restaurant', JSON.stringify(tablesDetails));
+            },
+            load() {
+                const tables = this.getTables();
+                let tablesDetails = JSON.parse(localStorage.getItem('restaurant'));
+                if (tables && tablesDetails && tables.length === tablesDetails.length && tablesDetails.length > 0) {
+                    for (let index in tablesDetails) {
+                        if (tablesDetails[index].timeout - Date.now() > 0) {
+                            tables[index].setState(tablesDetails[index])
+                        }
+                    }
+                }
+            }
+        },
+        template: `
+        <div class="restaurant">
+            <x-table v-for="(tableCapacity, index) in tablesCapacities" :key="index" :capacity=tableCapacity :evictCallback="evictCallback" ref="table"></x-table>
+        </div>
+        `
+    })
+
+
+    const app = new Vue({
+        el: '#app',
+        data: {
+            peopleNumber: undefined,
+            stayDuration: undefined,
+            fussMessage: ''
+
+        },
+        mounted() {
+            const restaurant = this.getRestaurant();
+            restaurant.load();
+        },
+        methods: {
+            addParty() {
+                const restaurant = this.getRestaurant();
+                try {
+                    const table = restaurant.awaitTable(+this.peopleNumber);
+                    table.placePeople(+this.peopleNumber, +this.stayDuration, this.fussMessage);
+                } catch (e) {
+                    alert(e)
+                }
+
+                restaurant.save();
+
+                this.resetForm();
+            },
+            resetForm() {
+                this.peopleNumber = undefined;
+                this.stayDuration = undefined;
+                this.fussMessage = '';
+            },
+            getRestaurant() {
+                const restaurant = this.$refs.restaurant;
+                if (!restaurant) throw 'can`t find a restaurant!';
+                return restaurant;
+            }
+        },
+        delimiters: ['{', '}']
+    });
+</script>
+</body>
 </html>
