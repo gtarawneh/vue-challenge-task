@@ -48,6 +48,22 @@
 
 				border: 2px red solid;
 			}
+
+			.form {
+				display: flex;
+				flex-direction: column;
+				padding: 40px;
+			}
+
+			.form * {
+				margin-top: 10px;
+				margin-bottom: 10px;
+			}
+
+			.form .button {
+				min-width: 7em;
+				margin-left: auto;
+			}
 		</style>
 		<title>
 			Restaurant Manager
@@ -55,23 +71,32 @@
 	</head>
 	<body>
 		<div id="app">
-			<x-restaurant></x-restaurant>
-			<div class="form">Ima form!</div>
+			<x-restaurant ref="restaurantComponent"></x-restaurant>
+			<form class="form">
+				<h2>New party</h2>
+				<span>Fill the following form to allocate a table to a party that is waiting to be seated.</span>
+				<input class="input" type="text" placeholder="Number of people" v-model="form.occupantsNumber"/>
+				<input class="input" type="text" placeholder="Duration of stay in seconds" v-model="form.duration"/>
+				<input class="input" type="text" placeholder="Fuss message if evicted" v-model="form.fussMessage"/>
+
+				<input @click="submitNewPartyForm" class="button" type="button" value="Add">
+			</form>
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
 			Vue.component('x-table', {
 				props: {
 					id: { type: Number, required: true },
-					endTime: {type: Date, required: true},
+					endTime: {type: Date, required: false},
 					isOccupied: { type: Boolean, required: true },
-					occupiedBy: { type: Number, required: true },
+					occupiedBy: { type: Number, required: false },
 					capacity: { type: Number, required: true },
 				},
 				data: function () {
 					return {
 						timer: undefined, //Timeout timer
 						timerToDisplay: '00:00', // mm:ss
+						$isAvailable: undefined, // Promise for table availability
 					}
 				},
 				created() {
@@ -87,6 +112,10 @@
 				},
 
 				methods: {
+					async untilAvailable() {
+						// TODO: $isAvailable
+						return !this.isOccupied ? this.getDetails() : await this.$isAvailable;
+					},
 					freeTable () {
 						this.dropTimer();
 						alert("Table" + this.id + " has become available");
@@ -108,7 +137,10 @@
 						if (secondsToEnd === 0) {
 							this.freeTable();
 						}
-					}
+					},
+					getDetails() {
+						// TODO: implement me!
+					},
 
 				},
 
@@ -125,19 +157,92 @@
 			Vue.component('x-restaurant', {
 				data: function () {
 					return {
-						count: 0
+						tables: [],
+						default_capacities: [10, 8, 10, 6, 2, 6, 4, 12],
 					}
 				},
+				created() {
+					this.initDefaultState();
+				},
+				methods: {
+					occupyTable(formData) {
+						const preferableTable = this.tables
+								.filter(table => table.capacity >= formData.occupantsNumber)
+								.sort((a, b) => a.capacity - b.capacity)
+								[0];
+
+						let table = this.tables.filter(t => t.id === preferableTable.id)[0];
+						console.log('Nanachi say: ', preferableTable, table, this.$refs);
+						table.isOccupied = true;
+						table.occupiedBy = parseInt(formData.occupantsNumber);
+						table.fussMessage = formData.fussMessage;
+						table.endTime = this.getEndTimeForDuration(formData.duration);
+					},
+					save(key) {
+						localStorage.setItem(key, JSON.stringify(this.tables))
+					},
+					load(key) {
+						// TODO: implement me!
+					},
+					async awaitTable(occupants) {
+						const $tablePromises = [];
+						this.tables.forEach(table => {
+							if (table.capacity >= occupants) {
+								$tablePromises.push(this.$refs['table_' + table.id][0].untilAvailable());
+							}
+						})
+						return await Promise.race($tablePromises)
+					},
+					initDefaultState() {
+						this.default_capacities.forEach((value, index) => {
+							this.tables.push({
+										id: index+1,
+										capacity: value,
+										isOccupied: false,
+										occupiedBy: undefined,
+										endTime: undefined,
+							})
+						})
+					},
+					getEndTimeForDuration(durationInSeconds) {
+						return new Date(new Date().getTime() + durationInSeconds * 1000)
+					},
+				},
 				template: '<div class="restaurant-container">' +
-							'<x-table :id="1" :capacity="5" :is-occupied="true" :occupied-by="3" :end-time="new Date(new Date().getTime() + 60000)"></x-table>' +
-							'<x-table :id="2" :capacity="3" :is-occupied="true" :occupied-by="5" :end-time="new Date(new Date().getTime() + 5000)"></x-table>' +
+							// '<x-table :id="2" :capacity="3" :is-occupied="true" :occupied-by="5" :end-time="new Date(new Date().getTime() + 5000)"></x-table>' +
+							'<x-table v-for="table in tables" ' +
+								'v-bind:key="table.id" ' +
+								':ref="table.id"' +
+								':id="table.id" ' +
+								':capacity="table.capacity" ' +
+								':is-occupied="table.isOccupied" ' +
+								':occupied-by="table.occupiedBy"' +
+								':end-time="table.endTime">' +
+							'</x-table>' +
 						'</div>'
 			})
 
 			const app = new Vue({
 				el: '#app',
 				data: {
-
+					form: {
+						occupantsNumber: null,
+						duration: null,
+						fussMessage: '',
+					}
+				},
+				methods: {
+					submitNewPartyForm() {
+						this.$refs.restaurantComponent.occupyTable(this.form);
+						this.resetForm();
+					},
+					resetForm() {
+						this.form = {
+							occupantsNumber: null,
+							duration: null,
+							fussMessage: '',
+						}
+					},
 				},
 				delimiters: ['{', '}'],
 			});
