@@ -61,14 +61,17 @@
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
 			Vue.component('x-table', {
+				props: {
+					id: { type: Number, required: true },
+					initialTimer: { type: Number, required: true }, //in seconds
+					isOccupied: { type: Boolean, required: true },
+					occupiedBy: { type: Number, required: true },
+					capacity: { type: Number, required: true },
+				},
 				data: function () {
 					return {
-						capacity: 10,
-						isOccupied: true,
-						occupiedBy: 0,
-
+						timerCountdown: this.initialTimer,
 						timer: undefined, //Timeout timer
-						timerCountdown: 600, //in seconds
 						timerToDisplay: '00:00' // mm:ss
 					}
 				},
@@ -97,9 +100,7 @@
 				methods: {
 					freeTable () {
 						this.dropTimer();
-						this.isOccupied = false;
-						this.occupiedBy = undefined;
-						alert("Table has become available");
+						alert("Table" + this.id + " has become available");
 					},
 					dropTimer () {
 						clearInterval(this.timer);
@@ -133,12 +134,8 @@
 					}
 				},
 				template: '<div class="restaurant-container">' +
-							'<x-table></x-table>' +
-							// '<x-table></x-table>' +
-							// '<x-table></x-table>' +
-							// '<x-table></x-table>' +
-							// '<x-table></x-table>' +
-							// '<x-table></x-table>' +
+							'<x-table :id="1" :capacity="5" :is-occupied="true" :occupied-by="3" :initial-timer="10"></x-table>' +
+							'<x-table :id="2" :capacity="3" :is-occupied="true" :occupied-by="5" :initial-timer="5"></x-table>' +
 						'</div>'
 			})
 
