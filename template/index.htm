@@ -28,6 +28,8 @@
 
 			.table-message {
 				width: 100%;
+				line-height: 1.7em;
+				text-align: center;
 			}
 
 			.table-action {
@@ -61,13 +63,67 @@
 			Vue.component('x-table', {
 				data: function () {
 					return {
-						capacity: 1
+						capacity: 10,
+						isOccupied: true,
+						occupiedBy: 0,
+
+						timer: undefined, //Timeout timer
+						timerCountdown: 600, //in seconds
+						timerToDisplay: '00:00' // mm:ss
 					}
 				},
-				template: '<div class="table-container">' +
-						'<span class="table-message">{{capacity}}</span>' +
-						'<button class="table-action">Evict</button>' +
+				created() {
+					this.updateTimerToDisplay();
+				},
+				watch: {
+					timerCountdown: {
+						handler(value) {
+							if (this.timerCountdown > 0) {
+								this.timer = setTimeout(() => {
+									this.timerCountdown--;
+									this.updateTimerToDisplay();
+								}, 1000);
+							} else {
+								this.freeTable();
+							}
+						},
+						immediate: true // This ensures the watcher is triggered upon creation
+					}
+				},
+				beforeDestroy () {
+					this.dropTimer();
+				},
+
+				methods: {
+					freeTable () {
+						this.dropTimer();
+						this.isOccupied = false;
+						this.occupiedBy = undefined;
+						alert("Table has become available");
+					},
+					dropTimer () {
+						clearInterval(this.timer);
+						this.timerToDisplay = undefined;
+					},
+					updateTimerToDisplay() {
+						const minutes = Math.floor(this.timerCountdown / 60);
+						const seconds = this.timerCountdown - minutes * 60;
+						// Add '0' before number, if it less than 10;
+						let fancyMinutes = ('0' + minutes).slice(-2);
+						let fancySeconds = ('0' + seconds).slice(-2);
+						this.timerToDisplay = fancyMinutes + ':' + fancySeconds;
+					}
+
+				},
+
+				template: '<div v-if="isOccupied" class="table-container">' +
+							'<span class="table-message">Occupied by {{occupiedBy}} <br/> (free in {{timerToDisplay}})</span>' +
+							'<button class="table-action">Evict</button>' +
+						'</div>' +
+						'<div v-else class="table-container">' +
+							'<span class="table-message">Table Available <br/> (capacity = {{capacity}})</span>' +
 						'</div>'
+
 			})
 
 			Vue.component('x-restaurant', {
@@ -78,11 +134,11 @@
 				},
 				template: '<div class="restaurant-container">' +
 							'<x-table></x-table>' +
-							'<x-table></x-table>' +
-							'<x-table></x-table>' +
-							'<x-table></x-table>' +
-							'<x-table></x-table>' +
-							'<x-table></x-table>' +
+							// '<x-table></x-table>' +
+							// '<x-table></x-table>' +
+							// '<x-table></x-table>' +
+							// '<x-table></x-table>' +
+							// '<x-table></x-table>' +
 						'</div>'
 			})
 
