@@ -25,6 +25,9 @@
 
 				border: 2px #a681ce solid;
 			}
+			.table-container.active {
+				background-color: #f3e7ff;
+			}
 
 			.table-message {
 				width: 100%;
@@ -94,9 +97,9 @@
 				},
 				data: function () {
 					return {
-						timer: undefined, //Timeout timer
 						timerToDisplay: '00:00', // mm:ss
 						$isAvailable: undefined, // Promise for table availability
+						timer: undefined // Refresh timer for updating timer on view
 					}
 				},
 				created() {
@@ -106,19 +109,26 @@
 					this.dropTimer();
 				},
 				mounted: function () {
-					window.setInterval(() => {
-						this.updateTimer();
-					}, 1000)
+					this.startTimer();
 				},
 
 				methods: {
+					occupy() {
+						this.startTimer();
+					},
 					async untilAvailable() {
 						// TODO: $isAvailable
 						return !this.isOccupied ? this.getDetails() : await this.$isAvailable;
 					},
 					freeTable () {
 						this.dropTimer();
-						alert("Table" + this.id + " has become available");
+						this.$emit('freeTable')
+					},
+					startTimer() {
+						this.updateTimer();
+						this.timer = window.setInterval(() => {
+							this.updateTimer();
+						}, 1000);
 					},
 					dropTimer () {
 						clearInterval(this.timer);
@@ -144,7 +154,7 @@
 
 				},
 
-				template: '<div v-if="isOccupied" class="table-container">' +
+				template: '<div v-if="isOccupied" class="table-container active">' +
 							'<span class="table-message">Occupied by {{occupiedBy}} <br/> (free in {{timerToDisplay}})</span>' +
 							'<button class="table-action">Evict</button>' +
 						'</div>' +
@@ -171,12 +181,23 @@
 								.sort((a, b) => a.capacity - b.capacity)
 								[0];
 
+						if (preferableTable === undefined) {
+							alert("Sorry, you company is so big, that we can not seat you to one table.");
+							return;
+						}
 						let table = this.tables.filter(t => t.id === preferableTable.id)[0];
-						console.log('Nanachi say: ', preferableTable, table, this.$refs);
 						table.isOccupied = true;
 						table.occupiedBy = parseInt(formData.occupantsNumber);
 						table.fussMessage = formData.fussMessage;
 						table.endTime = this.getEndTimeForDuration(formData.duration);
+						this.$refs[table.id][0].occupy();
+
+					},
+					tableBecomeAvailable(table) {
+						table.isOccupied = false;
+						table.occupiedBy = undefined;
+						table.endTime = undefined;
+						alert("Table" + table.id + " has become available");
 					},
 					save(key) {
 						localStorage.setItem(key, JSON.stringify(this.tables))
@@ -188,7 +209,7 @@
 						const $tablePromises = [];
 						this.tables.forEach(table => {
 							if (table.capacity >= occupants) {
-								$tablePromises.push(this.$refs['table_' + table.id][0].untilAvailable());
+								$tablePromises.push(this.$refs[table.id][0].untilAvailable());
 							}
 						})
 						return await Promise.race($tablePromises)
@@ -217,7 +238,8 @@
 								':capacity="table.capacity" ' +
 								':is-occupied="table.isOccupied" ' +
 								':occupied-by="table.occupiedBy"' +
-								':end-time="table.endTime">' +
+								':end-time="table.endTime"' +
+								'@freeTable="tableBecomeAvailable(table)">' +
 							'</x-table>' +
 						'</div>'
 			})
