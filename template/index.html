@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="main.css">
+		<style>
+			* {
+				font-family: 'Roboto';
+			}
+			.restaurant{
+				border: 2px solid red;
+			}
+			.table{
+				padding: 5px;
+				margin: 5px;
+				border: 2px solid blue;
+			}
+			.field{
+				height: 30px;
+				border: 1px solid gray;
+				width: 700px;
+			}
+		</style>
+		<title>
+			Restaurant Manager
+		</title>
+	</head>
+	<body>
+		<h1>Restaurant Manager</h1>
+		<div id="app">
+			<h2>Table Overview</h2>
+			<div class="restaurant">
+				<div v-for="table in tables" class="table">
+					<div v-if="!table.status">
+						Occupied by {{ table.people }}
+						(free in 03:44)
+
+					</div>
+					<div v-else>
+						Table Available
+						<br>
+						(capacity = {{ table.capacity }})
+					</div>
+				</div>
+			</div>
+			<br>
+			<h3>New Party</h3>
+			<p>Fill the following form to allocate a table to a party that is waiting to be seated.</p>
+			<form method="POST">
+				<p>
+					<input class="field" type="number" name="people" v-model="party.people" placeholder="Number of People (non-zero positive integer)" min="1" required>
+				</p>
+				<p>
+					<input class="field" type="number" name="duration" v-model="party.duration" placeholder="Duration of stay in seconds (positive number)" min="1" required>
+				</p>
+				<p>
+					<input class="field" type="text" name="message" v-model="party.message" placeholder="Fuss message if evicted (text)" required>
+				</p>
+				<p>
+					<button type="button" name="button" @click="NewParty">Add</button>
+				</p>
+			</form>
+		</div>
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+		<script>
+			const app = new Vue({
+				el: '#app',
+				data: {
+					tables: [
+						{id: 1, capacity: 10, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 2, capacity: 8, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 3, capacity: 10, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 4, capacity: 6, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 5, capacity: 2, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 6, capacity: 6, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 7, capacity: 4, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 8, capacity: 12, status: true, people: 0, duration: 0, message: 'Nothing'},
+					],
+					party: {
+						people: '',
+						duration: '',
+						message: '',
+					},
+				},
+				methods: {
+					NewParty() {
+						selection = ''
+						for (var i = 0; i < this.tables.length; i++){
+	            table = this.tables[i]
+							if (table.status){
+								if (this.party.people < table.capacity && selection == ''){
+									selection = i
+								} else if (this.party.people < table.capacity && table.capacity < this.tables[selection].capacity) {
+									selection = i
+								}
+							}
+	          }
+						this.tables[selection].status = false
+						this.tables[selection].people = this.party.people
+						this.tables[selection].duration = this.party.duration
+						this.tables[selection].message = this.party.message
+						this.party.people = ''
+						this.party.duration = ''
+						this.party.message = ''
+					},
+				},
+				delimiters: ['{{', '}}'],
+			});
+		</script>
+	</body>
+</html>
