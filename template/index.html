@@ -36,7 +36,7 @@
 					<div v-if="!table.status">
 						Occupied by {{ table.people }}
 						(free in 03:44)
-
+						<button type="button" name="button" @click="Evict(table.id - 1)">Evict</button>
 					</div>
 					<div v-else>
 						Table Available
@@ -59,8 +59,7 @@
 					<input class="field" type="text" name="message" v-model="party.message" placeholder="Fuss message if evicted (text)" required>
 				</p>
 				<p>
-
-					<button type="button" name="button" @click="NewParty">Add</button>
+					<button type="button" name="button" @click.prevent="NewParty">Add</button>
 				</p>
 			</form>
 		</div>
@@ -70,14 +69,14 @@
 				el: '#app',
 				data: {
 					tables: [
-						{id: 1, capacity: 10, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 2, capacity: 8, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 3, capacity: 10, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 4, capacity: 6, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 5, capacity: 2, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 6, capacity: 6, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 7, capacity: 4, status: true, people: 0, duration: 0, message: 'Nothing'},
-						{id: 8, capacity: 12, status: true, people: 0, duration: 0, message: 'Nothing'},
+						{id: 1, capacity: 10, status: true, people: 0, duration: 0, message: ''},
+						{id: 2, capacity: 8, status: true, people: 0, duration: 0, message: ''},
+						{id: 3, capacity: 10, status: true, people: 0, duration: 0, message: ''},
+						{id: 4, capacity: 6, status: true, people: 0, duration: 0, message: ''},
+						{id: 5, capacity: 2, status: true, people: 0, duration: 0, message: ''},
+						{id: 6, capacity: 6, status: true, people: 0, duration: 0, message: ''},
+						{id: 7, capacity: 4, status: true, people: 0, duration: 0, message: ''},
+						{id: 8, capacity: 12, status: true, people: 0, duration: 0, message: ''},
 					],
 					party: {
 						people: '',
@@ -91,10 +90,15 @@
 						for (var i = 0; i < this.tables.length; i++){
 	            table = this.tables[i]
 							if (table.status){
-								if (this.party.people < table.capacity && selection == ''){
+								if (this.party.people <= table.capacity && selection == ''){
 									selection = i
-								} else if (this.party.people < table.capacity && table.capacity < this.tables[selection].capacity) {
+								} else if (this.party.people <= table.capacity && table.capacity <= this.tables[selection].capacity && selection != '') {
 									selection = i
+								} else if (i == this.tables.length - 1 && selection == ''){
+									this.party.people = ''
+									this.party.duration = ''
+									this.party.message = ''
+									return alert("Can't find a table!!")
 								}
 							}
 	          }
@@ -105,6 +109,12 @@
 						this.party.people = ''
 						this.party.duration = ''
 						this.party.message = ''
+					},
+					Evict(table){
+						this.tables[table].status = true
+						this.tables[table].people = ''
+						this.tables[table].duration = ''
+						this.tables[table].message = ''
 					},
 				},
 				delimiters: ['{{', '}}'],
