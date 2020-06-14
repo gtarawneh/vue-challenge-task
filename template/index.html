@@ -33,9 +33,11 @@
 			<h2>Table Overview</h2>
 			<div class="restaurant">
 				<div v-for="table in tables" class="table">
-					<div v-if="!table.status">
+					<div v-if="!table.available">
 						Occupied by {{ table.people }}
-						(free in 03:44)
+						<br>
+						(free in {{ TimeOut(table.duration) }})
+						<br>
 						<button type="button" name="button" @click="Evict(table.id - 1)">Evict</button>
 					</div>
 					<div v-else>
@@ -69,14 +71,14 @@
 				el: '#app',
 				data: {
 					tables: [
-						{id: 1, capacity: 10, status: true, people: 0, duration: 0, message: ''},
-						{id: 2, capacity: 8, status: true, people: 0, duration: 0, message: ''},
-						{id: 3, capacity: 10, status: true, people: 0, duration: 0, message: ''},
-						{id: 4, capacity: 6, status: true, people: 0, duration: 0, message: ''},
-						{id: 5, capacity: 2, status: true, people: 0, duration: 0, message: ''},
-						{id: 6, capacity: 6, status: true, people: 0, duration: 0, message: ''},
-						{id: 7, capacity: 4, status: true, people: 0, duration: 0, message: ''},
-						{id: 8, capacity: 12, status: true, people: 0, duration: 0, message: ''},
+						{id: 1, capacity: 10, available: true, people: 0, duration: 0, message: ''},
+						{id: 2, capacity: 8, available: true, people: 0, duration: 0, message: ''},
+						{id: 3, capacity: 10, available: true, people: 0, duration: 0, message: ''},
+						{id: 4, capacity: 6, available: true, people: 0, duration: 0, message: ''},
+						{id: 5, capacity: 2, available: true, people: 0, duration: 0, message: ''},
+						{id: 6, capacity: 6, available: true, people: 0, duration: 0, message: ''},
+						{id: 7, capacity: 4, available: true, people: 0, duration: 0, message: ''},
+						{id: 8, capacity: 12, available: true, people: 0, duration: 0, message: ''},
 					],
 					party: {
 						people: '',
@@ -85,11 +87,11 @@
 					},
 				},
 				methods: {
-					NewParty() {
+					async NewParty() {
 						selection = ''
 						for (var i = 0; i < this.tables.length; i++){
 	            table = this.tables[i]
-							if (table.status){
+							if (table.available){
 								if (this.party.people <= table.capacity && selection == ''){
 									selection = i
 								} else if (this.party.people <= table.capacity && table.capacity <= this.tables[selection].capacity && selection != '') {
@@ -102,19 +104,38 @@
 								}
 							}
 	          }
-						this.tables[selection].status = false
+						this.tables[selection].available = false
 						this.tables[selection].people = this.party.people
 						this.tables[selection].duration = this.party.duration
 						this.tables[selection].message = this.party.message
 						this.party.people = ''
 						this.party.duration = ''
 						this.party.message = ''
+						console.log(this.tables[selection].message)
+						await this.awaitTable(this.tables[selection])
 					},
-					Evict(table){
-						this.tables[table].status = true
-						this.tables[table].people = ''
-						this.tables[table].duration = ''
-						this.tables[table].message = ''
+					Evict(index, clicked=true){
+						message = this.tables[index].message;
+						console.log(message)
+						this.tables[index].available = true
+						this.tables[index].people = ''
+						this.tables[index].duration = ''
+						this.tables[index].message = ''
+						if (clicked){
+							return alert(message)
+						}
+					},
+					awaitTable(table){
+						return new Promise(resolve => {
+					    setTimeout(() => {
+					      resolve(this.Evict(table.id, false));
+					    }, table.duration * 1000);
+							});
+					},
+					TimeOut(secs){
+						var minutes = Math.floor(secs/60)
+						var seconds = secs % 60
+						return minutes + ":" + seconds
 					},
 				},
 				delimiters: ['{{', '}}'],
