@@ -99,14 +99,13 @@
 						// get date from form
 						selection = 7
 						for (var i = 0; i < this.tables.length; i++){
-	            table = this.tables[i]
-							if (table.available){
-								if (this.party.people <= table.capacity && table.capacity < this.tables[selection].capacity){
+							if (this.tables[i].available){
+								if (this.party.people <= this.tables[i].capacity && this.tables[i].capacity < this.tables[selection].capacity){
 									selection = i
 								}
 							}
 	          }
-						if (this.party.people <= this.tables[selection].capacity && table.available) {
+						if (this.party.people <= this.tables[selection].capacity && this.tables[selection].available) {
 							// assign selected table
 							this.tables[selection].available = false
 							this.tables[selection].people = this.party.people
@@ -116,6 +115,10 @@
 							this.party.duration = ''
 							this.party.message = ''
 						}	else{
+							for (var i = 0; i < this.tables.length; i++) {
+								console.log(this.tables[i].available)
+								console.log(this.tables[i].capacity)
+							}
 							alert("Can't find a table!!")
 						}
 					},
