@@ -38,7 +38,7 @@
 						<br>
 						(free in {{ TimeOut(table.duration) }})
 						<br>
-						<button type="button" name="button" @click="Evict(table.id - 1)">Evict</button>
+						<button type="button" name="button" @click="Evict(table)">Evict</button>
 					</div>
 					<div v-else>
 						Table Available
@@ -88,55 +88,67 @@
 				},
 				methods: {
 					async NewParty() {
-						selection = ''
+						selection = 7
 						for (var i = 0; i < this.tables.length; i++){
 	            table = this.tables[i]
 							if (table.available){
-								if (this.party.people <= table.capacity && selection == ''){
+								if (this.party.people <= table.capacity && table.capacity < this.tables[selection].capacity){
 									selection = i
-								} else if (this.party.people <= table.capacity && table.capacity <= this.tables[selection].capacity && selection != '') {
-									selection = i
-								} else if (i == this.tables.length - 1 && selection == ''){
-									this.party.people = ''
-									this.party.duration = ''
-									this.party.message = ''
-									return alert("Can't find a table!!")
 								}
 							}
 	          }
-						this.tables[selection].available = false
-						this.tables[selection].people = this.party.people
-						this.tables[selection].duration = this.party.duration
-						this.tables[selection].message = this.party.message
-						this.party.people = ''
-						this.party.duration = ''
-						this.party.message = ''
-						console.log(this.tables[selection].message)
-						await this.awaitTable(this.tables[selection])
-					},
-					Evict(index, clicked=true){
-						message = this.tables[index].message;
-						console.log(message)
-						this.tables[index].available = true
-						this.tables[index].people = ''
-						this.tables[index].duration = ''
-						this.tables[index].message = ''
-						if (clicked){
-							return alert(message)
+						if (this.party.people <= this.tables[selection].capacity) {
+							this.tables[selection].available = false
+							this.tables[selection].people = this.party.people
+							this.tables[selection].duration = this.party.duration
+							this.tables[selection].message = this.party.message
+							this.party.people = ''
+							this.party.duration = ''
+							this.party.message = ''
+							await this.awaitTable(this.tables[selection])
+						}	else{
+							alert("Can't find a table!!")
 						}
 					},
+					Evict(table, clicked=true){
+						var message = table.message;
+						table.available = true
+						table.people = ''
+						table.duration = ''
+						table.message = ''
+						if (clicked){
+							alert(message)
+						}
+						return table
+					},
 					awaitTable(table){
-						return new Promise(resolve => {
-					    setTimeout(() => {
-					      resolve(this.Evict(table.id, false));
-					    }, table.duration * 1000);
-							});
+				    setTimeout(() => {
+				      return this.Evict(table, false)
+				    }, table.duration * 1000);
 					},
 					TimeOut(secs){
 						var minutes = Math.floor(secs/60)
 						var seconds = secs % 60
 						return minutes + ":" + seconds
 					},
+					TimeDisplay(){
+						setTimeout(() => {
+							for (var i = 0; i < this.tables.length; i++) {
+								if (0 < this.tables[i].duration) {
+									this.tables[i].duration--
+								}
+							}
+						}, 1000)
+					},
+				},
+				created() {
+				    setInterval(() => {
+							for (var i = 0; i < this.tables.length; i++) {
+								if (0 < this.tables[i].duration) {
+									this.tables[i].duration--
+								}
+							}
+						}, 1000)
 				},
 				delimiters: ['{{', '}}'],
 			});
