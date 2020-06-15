@@ -9,13 +9,21 @@
 			* {
 				font-family: 'Roboto';
 			}
+			#app{
+				display: grid;
+			}
 			.restaurant{
 				border: 2px solid red;
+				display: inline-block;
+				text-align: center;
 			}
 			.table{
 				padding: 5px;
 				margin: 5px;
 				border: 2px solid blue;
+				width: 20%;
+				min-height: 70px;
+				display: inline-block;
 			}
 			.field{
 				height: 30px;
@@ -87,7 +95,8 @@
 					},
 				},
 				methods: {
-					async NewParty() {
+					NewParty() {
+						// get date from form
 						selection = 7
 						for (var i = 0; i < this.tables.length; i++){
 	            table = this.tables[i]
@@ -98,6 +107,7 @@
 							}
 	          }
 						if (this.party.people <= this.tables[selection].capacity) {
+							// assign selected table
 							this.tables[selection].available = false
 							this.tables[selection].people = this.party.people
 							this.tables[selection].duration = this.party.duration
@@ -105,12 +115,12 @@
 							this.party.people = ''
 							this.party.duration = ''
 							this.party.message = ''
-							await this.awaitTable(this.tables[selection])
 						}	else{
 							alert("Can't find a table!!")
 						}
 					},
 					Evict(table, clicked=true){
+						// Evivt the table
 						var message = table.message;
 						table.available = true
 						table.people = ''
@@ -122,6 +132,7 @@
 						return table
 					},
 					awaitTable(table){
+						// Table Wait
 				    setTimeout(() => {
 				      return this.Evict(table, false)
 				    }, table.duration * 1000);
@@ -131,24 +142,21 @@
 						var seconds = secs % 60
 						return minutes + ":" + seconds
 					},
-					TimeDisplay(){
-						setTimeout(() => {
-							for (var i = 0; i < this.tables.length; i++) {
-								if (0 < this.tables[i].duration) {
-									this.tables[i].duration--
-								}
-							}
-						}, 1000)
-					},
 				},
 				created() {
-				    setInterval(() => {
-							for (var i = 0; i < this.tables.length; i++) {
-								if (0 < this.tables[i].duration) {
-									this.tables[i].duration--
-								}
+					// Refresh evenry 1 sec
+			    setInterval(() => {
+						for (var i = 0; i < this.tables.length; i++) {
+							if (1 < this.tables[i].duration) {
+								this.tables[i].duration--
+							} else{
+								this.tables[i].available = true
+								this.tables[i].people = ''
+								this.tables[i].duration = ''
+								this.tables[i].message = ''
 							}
-						}, 1000)
+						}
+					}, 1000)
 				},
 				delimiters: ['{{', '}}'],
 			});
