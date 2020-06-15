@@ -106,7 +106,7 @@
 								}
 							}
 	          }
-						if (this.party.people <= this.tables[selection].capacity) {
+						if (this.party.people <= this.tables[selection].capacity && table.available) {
 							// assign selected table
 							this.tables[selection].available = false
 							this.tables[selection].people = this.party.people
@@ -130,12 +130,6 @@
 							alert(message)
 						}
 						return table
-					},
-					awaitTable(table){
-						// Table Wait
-				    setTimeout(() => {
-				      return this.Evict(table, false)
-				    }, table.duration * 1000);
 					},
 					TimeOut(secs){
 						var minutes = Math.floor(secs/60)
