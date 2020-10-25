@@ -1,32 +1,348 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
-		<style>
-			* {
-				font-family: 'Roboto';
-			}
-		</style>
-		<title>
-			Restaurant Manager
-		</title>
-	</head>
-	<body>
-		<div id="app">
-			{ message }
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+	<style>
+		* {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		}
+
+		.required::-webkit-input-placeholder {
+			color: red;
+		}
+
+		h1,
+		h2 {
+			font-weight: normal;
+		}
+
+		body {
+			padding: 25px;
+		}
+
+		#app {
+			width: 90%;
+			margin: auto;
+		}
+
+		p {
+			text-align: center;
+		}
+
+		.restaurant {
+			height: 323px;
+			border: red;
+			border-style: groove;
+			padding: 28px;
+			margin: 7px;
+			display: block;
+			width: 965px;
+		}
+
+		.table {
+			float: left;
+			border: #d6c7eb;
+			border-style: groove;
+			padding: 10px;
+			margin: 7px;
+			width: 200px;
+			height: 120px;
+		}
+
+		.new-party-form {
+			margin: auto;
+			padding: 30px;
+		}
+
+
+		.new-party-form span {
+			font-size: 18px
+		}
+
+		.input {
+			width: 100%;
+			margin-bottom: 10px;
+			font-size: 18px;
+			padding: 5px;
+		}
+
+		.button {
+			width: 75px;
+			background-color: #e8e8e8;
+			border: none;
+			padding-bottom: 7px;
+			text-align: center;
+			padding-top: 7px;
+			padding-right: 15px;
+			padding-left: 15px;
+		}
+
+		.evict-btn {
+			background-color: #e2c1e8;
+		}
+
+		.available {
+			background-color: #faf4fb;
+		}
+
+		label span {
+			color: red
+		}
+	</style>
+	<title>
+		Restaurant Manager
+	</title>
+</head>
+
+<body>
+	<div id="app">
+		<h1>Restaurant Manager</h1>
+		<br />
+		<h2>Table overview</h2>
+		<br />
+		<x-restaurant ref="restaurantComponent"></x-restaurant>
+
+		<div>
+			<form class="new-party-form">
+				<h2> New Party </h2>
+				<span> Fill the following form to allocate a table to a party that is waiting to
+					be seated. </span>
+				<br /><br />
+				<input class="input required" type="text" placeholder="Number of people &#9733"
+					title="this fild is required" v-model="requestTableReserved.numberOfPeople" />
+				<input class="input required" type="text" placeholder="Duration of stay &#9733"
+					title="this fild is required" v-model="requestTableReserved.reserveTime" />
+				<input class="input " type="text" placeholder="Fuss message"
+					v-model="requestTableReserved.notificationCustomMessage" />
+
+				<input @click="newTableReservation" class="button" type="button" value="Add" style="float: right" />
+			</form>
 		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-		<script>
-			const app = new Vue({
-				el: '#app',
-				data: {
-					message: 'Hello Vue!'
+
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+	<script type='text/x-template' id=tableContainer>
+		<div class="table" :class="{ available : available }">
+			<div v-if="available">
+				<span class="mainLabel" >  Table Available  <p> ( Capacity = {{capacity}} ) </p> </span>
+			</div>
+			<div v-if="!available">
+				<span class="mainLabel" >  Occupied by {{occupants}} <p> ( free in  {{seconds | timeConverter }} ) </p>  </span>
+				<p>
+					<button @click="evictTimer" class="button evict-btn" v-if="!available"> Evict</button>
+				</p>
+			</div>
+	
+		</div>
+	</script>
+
+	<script type='text/x-template' id=restaurantContainer>
+		<div class="restaurant">
+			<x-table  ref="tableContainer" v-for="table in tables" v-bind="table" :ref="'table_'+ table.id"
+		 	@makeTableAvaliable="makeTableAvaliable" v-bind:key="table.id"></x-table>
+		</div>
+	</script>
+
+	<script>
+		// table component 
+		Vue.component('x-table', {
+			template: `#tableContainer`,
+			// propertie for each table 
+			props: {
+				id: Number,
+				available: Boolean,
+				capacity: Number,
+				occupants: Number
+			},
+			data() {
+				// to get the reusable data for each table 
+				return {
+					countDownLeftTime: "",
+					timerId: '',
+					waitToAvailable: null,
+					evicted: false,
+					seconds: 0
+				}
+			},
+			// functionalties per table
+			methods: {
+				// timer to know when the table become available again  
+				async startTimer(seconds) {
+					this.seconds = seconds;
+					this.waitToAvailable = new Promise(resolve => {
+						this.timerId = setInterval(() => {
+							if (this.seconds && !this.evicted) {
+								this.seconds--;
+							} else {
+								resolve(this.getTableDetail());
+								this.$emit('makeTableAvaliable', { id: this.id, evicted: this.evicted });
+								clearInterval(this.timerId);
+								this.evicted = false;
+							}
+						}, 1000);
+					});
 				},
-				delimiters: ['{', '}'],
-			});
-		</script>
-	</body>
+				// force table evicted
+				evictTimer() {
+					this.evicted = true;
+				},
+				// technical functionale to ewait till the table is available 
+				async untilAvailable() {
+					return this.available ? this.getTableDetail() : await this.waitToAvailable;
+				},
+				// to return the table props 
+				getTableDetail() {
+					return (({ id, available, capacity, occupants }) => ({
+						id, available, capacity, occupants
+					}))(this.$props);
+				},
+				// to return the needed time for this table to be available
+				getCountdownLeftTime() {
+					return this.seconds;
+				}
+			},
+			// filter property to apply common text formatting 
+			filters: {
+				// to return the timer string after convert it to human readable format
+				timeConverter: (seconds) => {
+					return new Date(seconds * 1000).toISOString().substr(14, 5);
+				}
+			}
+		});
+
+		// restaurant component
+		Vue.component('x-restaurant', {
+			template: `#restaurantContainer`,
+			// to return the reusable data  
+			data() {
+				return {
+					capacities: [10, 8, 10, 6, 2, 6, 4, 12],
+					tables: [],
+				}
+			},
+			methods: {
+				// to check if there is a table capable with data provided from the user
+				checkTable(requestTableReserved) {
+
+					let sortedTables = [...this.tables].sort((a, b) => a.capacity - b.capacity);
+					for (let table of sortedTables) {
+						if (table.capacity >= requestTableReserved.numberOfPeople && table.available) {
+							this.tables[table.id].available = false;
+							this.tables[table.id].occupants = requestTableReserved.numberOfPeople;
+							this.tables[table.id].notificationCustomMessage = requestTableReserved.notificationCustomMessage;
+							this.$refs[`table_${table.id}`][0].startTimer(requestTableReserved.reserveTime);
+							this.$forceUpdate();
+							return;
+						}
+					}
+
+					alert('Table Not available');
+				},
+				// to make the table available again due to force evict or the reservation ends
+				makeTableAvaliable(tableStatus) {
+					this.tables[tableStatus.id].available = true;
+					if (tableStatus.evicted) alert(this.tables[tableStatus.id].fuss_message);
+					this.$forceUpdate();
+				},
+				// wait for the table to be available for technical requirement 
+				async awaitTable(tableSize) {
+					let promises = [];
+					this.tables.forEach((table, indx) => {
+						if (table.capacity >= tableSize) {
+							promises.push(this.$refs[`table_${indx}`][0].untilAvailable());
+						}
+					});
+					return await Promise.race(promises);
+				},
+				// to save the requested table in the local storage till there is a table available 
+				save(key) {
+					const tablesState = this.tables.map((table) => {
+						if (!table.available) {
+							table.countDownLeftTime = this.$refs[`table_${table.id}`][0].getCountdownLeftTime();
+						}
+						return table;
+					});
+					localStorage.setItem(key, JSON.stringify(tablesState));
+
+				},
+				// to load the saved requested table in the local storage after there is a table avaialable
+
+				load(key) {
+					let tablesState = localStorage.getItem(key);
+					if (!tablesState) return;
+
+					tablesState = JSON.parse(tablesState);
+
+					this.tables = tablesState;
+
+					tablesState.forEach((table) => {
+						if (!table.available) {
+							// set the countdown left time
+							this.$refs[`table_${table.id}`][0].startTimer(parseInt(table.countDownLeftTime));
+						}
+					});
+				}
+			},
+			// on of the vue js life cycle which fired after the component is created 
+			created() {
+				this.capacities.forEach((x, indx) => {
+					this.tables[indx] = {
+						id: indx,
+						capacity: x,
+						available: true
+					};
+				});
+			}
+		});
+
+		// starting the vue app 
+		const app = new Vue({
+			el: '#app',
+			data: {
+				requestTableReserved: {
+					numberOfPeople: null,
+					reserveTime: null,
+					notificationCustomMessage: ''
+				}
+			},
+			methods: {
+				// to handle the user request to reserve a new table 
+				newTableReservation() {
+					if (!this.requestTableReserved.numberOfPeople || !this.requestTableReserved.reserveTime) {
+						return alert('Please fill all the required field');
+					}
+
+					this.requestTableReserved.numberOfPeople = Number(this.requestTableReserved.numberOfPeople)
+					this.requestTableReserved.reserveTime = Number(this.requestTableReserved.reserveTime)
+
+					if (isNaN(this.requestTableReserved.numberOfPeople) || this.requestTableReserved.numberOfPeople <= 0) {
+						this.reset()
+						return alert('Number of people should be number and bigger than zero');
+					}
+
+					if (isNaN(this.requestTableReserved.reserveTime) || this.requestTableReserved.reserveTime < 0) {
+						this.reset()
+						return alert('Duratuion must be bigger than zero');
+					}
+
+					this.$refs.restaurantComponent.checkTable(this.requestTableReserved);
+					this.reset();
+				},
+				// to reset the user input data after its saved
+				reset() {
+					this.requestTableReserved = {
+						numberOfPeople: null,
+						reserveTime: null,
+						notificationCustomMessage: ''
+					}
+				}
+			}
+		});
+	</script>
+</body>
+
 </html>
