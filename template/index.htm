@@ -231,9 +231,12 @@
 					let sortedTables = [...this.tables].sort((a, b) => a.capacity - b.capacity);
 					for (let table of sortedTables) {
 						if (table.capacity >= requestTableReserved.numberOfPeople && table.available) {
-							this.tables[table.id].available = false;
-							this.tables[table.id].occupants = requestTableReserved.numberOfPeople;
-							this.tables[table.id].notificationCustomMessage = requestTableReserved.notificationCustomMessage;
+							this.tables[table.id] = {
+								...this.tables[table.id],
+								available: false,
+								occupants: requestTableReserved.numberOfPeople,
+								notificationCustomMessage: requestTableReserved.notificationCustomMessage || 'Table evicted!!'
+							}
 							this.$refs[`table_${table.id}`][0].startTimer(requestTableReserved.reserveTime);
 							this.$forceUpdate();
 							return;
@@ -245,7 +248,7 @@
 				// to make the table available again due to force evict or the reservation ends
 				makeTableAvaliable(tableStatus) {
 					this.tables[tableStatus.id].available = true;
-					if (tableStatus.evicted) alert(this.tables[tableStatus.id].fuss_message);
+					if (tableStatus.evicted) alert(this.tables[tableStatus.id].notificationCustomMessage);
 					this.$forceUpdate();
 				},
 				// wait for the table to be available for technical requirement 
