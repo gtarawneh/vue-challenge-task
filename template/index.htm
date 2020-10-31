@@ -4,10 +4,51 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
 		<style>
 			* {
 				font-family: 'Roboto';
+			}
+			#app {
+				margin: auto;
+				width: 700px;
+			}
+			.occupied-table, .available-table {
+				align-items: center;
+				border: 1px solid #d8cbeb;
+				color: #673ab6;
+				display: flex;
+				flex-direction: column;
+				height: 150px;
+				justify-content: center;
+				margin: 10px;
+				position: relative;
+				width: 150px;
+			}
+			.occupied-table {
+				background: #faf3fa;
+			}
+			.button {
+				background: #e2c1e7;
+				border: none;
+				bottom: 10px;
+				outline: none;
+				padding: 5px;
+				position: absolute;
+				width: 130px;
+			}
+			.tables-container {
+				display: flex;
+				flex-wrap: wrap;
+				width: 700px;
+			}
+			.form input, button {
+				border: 1px solid lightgrey;
+				box-sizing: border-box;
+				font-size: 16px;
+				margin-top: 5px;
+				outline: none;
+				padding: 5px;
+				width: 700px;
 			}
 		</style>
 		<title>
@@ -16,17 +57,192 @@
 	</head>
 	<body>
 		<div id="app">
-			{ message }
+			<h1>Restaurant Manager</h1>
+			<x-restaurant ref="restaurant" :tables="tables"></x-restaurant>
+			<h2>New Party</h2>
+			<p>Fill the following form to allocate a table to a party that is waiting to be seated.</p>
+			<div class="form">
+				<input v-model="partyData.occupiedBy" type="number" class="form-input" placeholder="Number of People" min="0" />
+				<input v-model="partyData.reservedFor" type="number" class="form-input" placeholder="Duration of Stay" min="0" />
+				<input v-model="partyData.message" class="form-input" placeholder="Fuss message if evicted" />
+				<button v-on:click="addParty" class="form-submit">Add</button>
+			</div>
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
+			Vue.component('x-table', {
+				template: `
+					<div class="table">
+						<div v-if="isAvailable" class="available-table">
+							<span>Table available</span>
+							<span>(capacity = {{capacity}})</span>
+						</div>
+						<div v-else class="occupied-table">
+							<span>Occupied by {{partyData.occupiedBy}}</span>
+							<span>(free in {{reservationTimeFormatted}})</span>
+							<button v-on:click="evictTable" class="button">Evict</button>
+						</div>
+					</div>
+				`,
+				props: {
+					capacity: Number,
+					tableNumber: Number,
+				},
+				data: () => ({
+					partyData: {},
+					isAvailable: true,
+					reservationTimeFormatted: '',
+				}),
+				methods: {
+					reserveTable(partyData) {
+						this.partyData = partyData;
+						this.isAvailable = false;
+					},
+					evictTable() {
+						alert(this.partyData.message);
+						this.clearTableReservation();
+					},
+					clearTableReservation() {
+						const reservedTables = JSON.parse(localStorage.getItem('reservedTables'));
+						const tableIndex = reservedTables.indexOf(this.tableNumber);
+						reservedTables.splice(tableIndex, 1);
+						localStorage.setItem('reservedTables', JSON.stringify(reservedTables));
+						this.isAvailable = true;
+						this.partyData = {};
+					},
+					async untilAvailable () {
+						return new Promise(resolve => {
+							const interval = setInterval(() => {
+								if (this.isAvailable) {
+									resolve(this);
+									clearInterval(interval);
+									this.isAvailable = false
+								}
+							}, 1000);
+						});
+					},
+				},
+				watch: {
+					partyData: {
+						handler(value) {
+							if (value.occupiedBy) {
+								if (value.reservedFor > 0) {
+									this.reservationTimeFormatted = new Date((value.reservedFor) * 1000).toISOString().substr(11, 8);
+									const timeOut = setTimeout(() => {
+										const reservedTables = JSON.parse(localStorage.getItem('reservedTables'));
+										if (reservedTables.length) {
+											((reservedTables.find((table) => table.tableNumber === this.tableNumber) || {}).partyData || {}).reservedFor--;
+											localStorage.setItem('reservedTables', JSON.stringify(reservedTables));
+											value.reservedFor--;
+										}
+									}, 1000);
+								} else {
+									this.clearTableReservation();
+								}
+							} else {
+								return
+							}
+						},
+						deep: true
+					},
+				}
+			});
+
+			Vue.component('x-restaurant', {
+				template: `
+					<div>
+						<h2>Table Overview</h2>
+						<div class="tables-container">
+							<x-table ref="tables"
+								v-for="table in tables"
+								:capacity="table.capacity"
+								:tableNumber="table.tableNumber"
+							/>
+						</div>
+					</div>
+				`,
+				props: {
+					tables: Array,
+				},
+				mounted() {
+					this.load();
+				},
+				methods: {
+					async awaitTable(numberOfPeople) {
+						if (numberOfPeople > 0) {
+							const { tables } = this.$refs;
+							if (tables.every((table) => table.capacity < numberOfPeople)) {
+								alert('There is no available tables for this number of people');
+								return;
+							}
+
+							const availableTable = tables.sort((a, b) => a.capacity - b.capacity).find((table) => numberOfPeople <= table.capacity && table.isAvailable);
+							if (availableTable) {
+								return availableTable;
+							}
+
+							alert('Please wait until table is available');
+
+							const awaitedTable = (tables.filter((table) => numberOfPeople <= table.capacity && !table.isAvailable) || []).sort((a, b) => a.durationOfStay - b.durationOfStay)[0];
+
+							if (awaitedTable) {
+								return await awaitedTable.untilAvailable();
+							}
+						} else {
+							alert('Enter a valid number of people');
+						}
+					},
+					save() {
+						const { tables } = this.$refs;
+						const reservedTables = tables.filter((table) => !table.isAvailable).map((table) => {
+							return {
+								tableNumber: table.tableNumber,
+								partyData: table.partyData
+							};
+						});
+
+						localStorage.setItem('reservedTables', JSON.stringify(reservedTables));
+					},
+					load() {
+						const { tables } = this.$refs;
+						const reservedTables = JSON.parse(localStorage.getItem('reservedTables'));
+
+						if (reservedTables.length) {
+							tables.forEach((table) => {
+								const partyData = reservedTables.find(party => table.tableNumber === party.tableNumber);
+								partyData && table.reserveTable(partyData.partyData);
+							});
+						}
+					}
+				},
+			});
+
 			const app = new Vue({
 				el: '#app',
-				data: {
-					message: 'Hello Vue!'
+				data: () => ({
+					partyData: {},
+					tables: [
+						{capacity: 10, tableNumber: 1},
+						{capacity: 8, tableNumber: 2},
+						{capacity: 10, tableNumber: 3},
+						{capacity: 6, tableNumber: 4},
+						{capacity: 2, tableNumber: 5},
+						{capacity: 6, tableNumber: 6},
+						{capacity: 4, tableNumber: 7},
+						{capacity: 12, tableNumber: 8},
+					],
+				}),
+				methods: {
+					async addParty() {
+						const table = await this.$refs.restaurant.awaitTable(this.partyData.occupiedBy);
+						table && table.reserveTable(this.partyData);
+						this.$refs.restaurant.save();
+						this.partyData = {};
+					}
 				},
 				delimiters: ['{', '}'],
 			});
 		</script>
 	</body>
 </html>
+
