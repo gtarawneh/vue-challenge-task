@@ -182,3 +182,4 @@ You're not allowed to use any external dependencies (JS, CSS or else) other
 than what's already included in `template/index.htm`, unless there is a
 compelling reason that's preventing you from completing the task (e.g. browser
 support).
+# Restaurant-management-vue
