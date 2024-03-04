@@ -136,6 +136,30 @@
                         }
                     ]
                 },
+				methods: {
+                    getTimeDifference(cell) {
+                        if (!cell.availableTime) {
+                            return 'Loading...';
+                        }
+                        const now = new Date();
+                        const diffInMilliseconds = new Date(cell.availableTime) - now;
+                        if (diffInMilliseconds <= 0) {
+                            cell.occupied = false;
+                            return '0 : 0';
+                        }
+                        const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+                        const diffInMinutes = Math.floor(diffInSeconds / 60);
+                        const diffInHours = Math.floor(diffInMinutes / 60);
+                        return  diffInMinutes % 60 + ' : ' + diffInSeconds % 60;
+                    }
+                },
+                created() {
+                    setInterval(() => {
+                        this.cells.forEach(cell => {
+                            cell.timeDifference = this.getTimeDifference(cell);
+                        });
+                    }, 1000);
+                },
 				delimiters: ['{', '}'],
 			});
 		</script>
