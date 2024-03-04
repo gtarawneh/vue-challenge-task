@@ -6,17 +6,71 @@
 		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
 		<link rel="stylesheet" href="main.css">
 		<style>
-			* {
-				font-family: 'Roboto';
-			}
-		</style>
+            * {
+                font-family: 'Roboto';
+            }
+            #app-wrapper {
+                margin: 0 auto;
+                width: 80%;
+            }
+            .table {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: 1fr 1fr;
+                grid-template-areas:
+                "row1 row1 row1 row1"
+                "row2 row2 row2 row2";
+                border: 3px solid red;
+                width: 900px;
+                padding: 20px 10px;
+            }
+            [class^="cell-row-"] {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+            .cell-item,
+            .occupied {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border: 1px solid black;
+                margin: 10px;
+                padding: 10px;
+                width: 100%;
+            }
+            .occupied {
+                background-color: #faf4fb;
+                border: 1px solid #ddd1ee;
+            }
+            .btn {
+                background-color: #e2c1e8;
+                border: none;
+                color: #673ab7;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                width: 100px;
+                height: 30px;
+            }
+        </style>
 		<title>
 			Restaurant Manager
 		</title>
 	</head>
 	<body>
 		<div id="app">
-			{ message }
+			<div id="app-wrapper">
+				<x-restaurant :cells="cells"></x-restaurant>
+			</div>
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 		<script>
