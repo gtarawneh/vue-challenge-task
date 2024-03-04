@@ -36,6 +36,26 @@
                 </div>
 				`
 			});
+
+			Vue.component('x-restaurant', {
+            props: ['cells'],
+            methods: {
+                getClassName(cell) {
+                    return `cell-row-${Math.ceil(cell.id / 4)}`;
+                }
+            },
+            template: `
+                <div id="x-resturant">
+                    <h1>Restaurant Manager</h1>
+                    <h3>Tables Overview</h3>
+                    <div class="table">
+                        <div v-for="cell in cells" :class="getClassName(cell)">
+                            <x-table :cell="cell"></x-table>
+                        </div>
+                    </div>
+                </div>
+				`
+			});
 			
 			const app = new Vue({
 				el: '#app',
