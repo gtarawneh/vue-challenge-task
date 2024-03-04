@@ -11,8 +11,17 @@
             }
             #app-wrapper {
                 margin: 0 auto;
-                width: 80%;
+                width: 1100px;
             }
+			/* Restaurant */
+			.restaurant-title {
+				font-size: 2rem;
+				font-weight: 400;
+			}
+			.restaurant-subtitle {
+				font-size: 1.5rem;
+				font-weight: 400;
+			}
             .table {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
@@ -21,9 +30,9 @@
                 "row1 row1 row1 row1"
                 "row2 row2 row2 row2";
                 border: 3px solid red;
-                width: 900px;
                 padding: 20px 10px;
             }
+			/* Tables */
             [class^="cell-row-"] {
                 display: flex;
                 flex-direction: row;
@@ -61,6 +70,51 @@
                 width: 100px;
                 height: 30px;
             }
+			/* Add Table */
+			.add-table {
+				margin-top: 60px;
+				padding: 20px;
+				border: 1px solid #ddd1ee;
+				background-color: #faf4fb;
+			}
+			.add-table-title {
+				font-size: 1.5rem;
+				font-weight: 400;
+				margin-bottom: 10px;
+			}
+			.add-table-content {
+				font-size: 0.8rem;
+				font-weight: 400;
+				margin: 0;
+			}
+			.add-table form {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+			}
+			.add-table input {
+				margin: 10px 20px;
+				padding: 10px 0;
+				width: 100%;
+			}
+			.add-table .btn-submit {
+				background-color: #e2c1e8;
+				border: none;
+				color: #673ab7;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				align-self: flex-end;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+				width: 100px;
+				height: 30px;
+			}
         </style>
 		<title>
 			Restaurant Manager
@@ -155,20 +209,22 @@
 				},
             },
             template: `
-                <div id="x-resturant">
-                    <h1>Restaurant Manager</h1>
-                    <h3>Tables Overview</h3>
+                <div id="x-restaurant">
+                    <h1 class="restaurant-title">Restaurant Manager</h1>
+                    <h3 class="restaurant-subtitle">Tables Overview</h3>
                     <div class="table">
                         <div v-for="cell in cells" :class="getClassName(cell)">
                             <x-table :cell="cell"></x-table>
                         </div>
                     </div>
 					<div class="add-table">
-						<form @submit.prevent="addTable">
+						<h3 class="add-table-title">New Party</h3>
+						<h5 class="add-table-content">Fill the following form to allocate a table to a party that is waiting to be seated.</h5>
+						<form class="form" @submit.prevent="addTable">
 							<input type="number" v-model="newTable.capacity" placeholder="Number of People (non-zero positive integer)" required min="1" max="12">
 							<input type="datetime-local" v-model="newTable.availableTime" placeholder="Duration of stay in seconds (positive number)">
 							<input type="text" v-model="newTable.message" placeholder="Fuss message if evicted (text)">
-							<button type="submit">Add Table</button>
+							<button type="submit" class="btn-submit">Add</button>
 						</form>
 					</div>
                 </div>
