@@ -56,12 +56,86 @@
                 </div>
 				`
 			});
-			
+
 			const app = new Vue({
 				el: '#app',
-				data: {
-					message: 'Hello Vue!'
-				},
+				el: '#app',
+                data: {
+                    cells: [
+                        {
+                            id: 1,
+                            name: 'Table 1',
+                            numberOfOccupants: null,
+                            occupied: false,
+                            capacity: 10,
+                            availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 2,
+                            name: 'Table 2',
+                            numberOfOccupants: null,
+                            occupied: false,
+                            capacity: 8,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 3,
+                            name: 'Table 3',
+                            numberOfOccupants: 6,
+                            occupied: true,
+                            capacity: 10,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 4,
+                            name: 'Table 4',
+                            numberOfOccupants: 4,
+                            occupied: true,
+                            capacity: 6,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 5,
+                            name: 'Table 5',
+                            numberOfOccupants: null,
+                            occupied: false,
+                            capacity: 2,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 6,
+                            name: 'Table 6',
+                            numberOfOccupants: null,
+                            occupied: false,
+                            capacity: 6,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 7,
+                            name: 'Table 7',
+                            numberOfOccupants: null,
+                            occupied: false,
+                            capacity: 4,
+                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        },
+                        {
+                            id: 8,
+                            name: 'Table 8',
+                            numberOfOccupants: null,
+                            occupied: true,
+                            capacity: 12,
+                            availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
+                            timeDifference: null
+                        }
+                    ]
+                },
 				delimiters: ['{', '}'],
 			});
 		</script>
