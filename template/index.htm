@@ -93,10 +93,66 @@
 
 			Vue.component('x-restaurant', {
             props: ['cells'],
+			data: function() {
+				return {
+					newTable: {
+						capacity: null,
+						availableTime: null,
+						message: null
+					},
+					value: null
+				}
+			},
             methods: {
                 getClassName(cell) {
                     return `cell-row-${Math.ceil(cell.id / 4)}`;
-                }
+                },
+				async addTable() {
+					// Find the first table that is not occupied
+					const availableTable = this.cells.sort((a, b) => a.capacity - b.capacity).find(cell => !cell.occupied && cell.capacity >= this.newTable.capacity);
+
+
+					// If there is an available table
+					if (availableTable) {
+						// Assign the new booking to the available table
+						availableTable.occupied = true;
+						availableTable.numberOfOccupants = this.newTable.capacity;
+						availableTable.availableTime = this.newTable.availableTime;
+
+						// If there is a message, show it
+						if (this.newTable.message) {
+							alert(this.newTable.message);
+						}
+
+						if (this.cells.capacity >= availableTable.numberOfOccupants) {
+							alert('No available tables.');
+						}
+
+						// Wait until the table becomes available
+						await this.untilAvailable(availableTable);
+
+						// Reset the form
+						this.newTable = {
+							capacity: null,
+							availableTime: null,
+							message: null
+						};
+					} else {
+						// If there is no available table, show an alert
+						alert('No available tables.');
+					}
+				},
+				untilAvailable(cell) {
+					return new Promise(resolve => {
+						const checkInterval = setInterval(() => {
+							if (!cell.occupied) {
+								clearInterval(checkInterval);
+								alert(`Table ${cell.id} is now available.`);
+								resolve();
+							}
+						}, 1000);
+					});
+				},
             },
             template: `
                 <div id="x-resturant">
@@ -107,6 +163,14 @@
                             <x-table :cell="cell"></x-table>
                         </div>
                     </div>
+					<div class="add-table">
+						<form @submit.prevent="addTable">
+							<input type="number" v-model="newTable.capacity" placeholder="Number of People (non-zero positive integer)" required min="1" max="12">
+							<input type="datetime-local" v-model="newTable.availableTime" placeholder="Duration of stay in seconds (positive number)">
+							<input type="text" v-model="newTable.message" placeholder="Fuss message if evicted (text)">
+							<button type="submit">Add Table</button>
+						</form>
+					</div>
                 </div>
 				`
 			});
