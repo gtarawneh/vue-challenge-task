@@ -254,26 +254,25 @@
           this.resetForm();
         },
         template: `
-                <div id="x-restaurant">
-                    <h1 class="restaurant-title">Restaurant Manager</h1>
-                    <h3 class="restaurant-subtitle">Tables Overview</h3>
-                    <div class="table">
-                        <div v-for="cell in cells" :class="getClassName(cell)">
-                            <x-table :cell="cell"></x-table>
-                        </div>
+            <div id="x-restaurant">
+                <h1 class="restaurant-title">Restaurant Manager</h1>
+                <h3 class="restaurant-subtitle">Tables Overview</h3>
+                <div class="table">
+                    <div v-for="cell in cells" :class="getClassName(cell)">
+                        <x-table :cell="cell"></x-table>
                     </div>
-					<div class="add-table">
-						<h3 class="add-table-title">New Party</h3>
-						<h5 class="add-table-content">Fill the following form to allocate a table to a party that is waiting to be seated.</h5>
-						<form class="form" @submit.prevent="addTable">
-							<input type="number" v-model="newTable.occupants" placeholder="Number of People (non-zero positive integer)" required min="1" max="12">
-							<input type="datetime-local" v-model="newTable.availableTime" placeholder="Duration of stay in seconds (positive number)">
-							<input type="text" v-model="newTable.message" placeholder="Fuss message if evicted (text)">
-							<button type="submit" class="btn-submit">Add</button>
-						</form>
-					</div>
                 </div>
-				`,
+                <div class="add-table">
+                    <h3 class="add-table-title">New Party</h3>
+                    <h5 class="add-table-content">Fill the following form to allocate a table to a party that is waiting to be seated.</h5>
+                    <form class="form" @submit.prevent="addTable">
+                        <input type="number" v-model="newTable.occupants" placeholder="Number of People (non-zero positive integer)" required min="1" max="12">
+                        <input type="datetime-local" v-model="newTable.availableTime" placeholder="Duration of stay in seconds (positive number)">
+                        <input type="text" v-model="newTable.message" placeholder="Fuss message if evicted (text)">
+                        <button type="submit" class="btn-submit">Add</button>
+                    </form>
+                </div>
+            </div>`,
       });
 
       const app = new Vue({
