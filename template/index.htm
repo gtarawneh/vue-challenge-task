@@ -1,156 +1,154 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="main.css">
-		<style>
-            * {
-                font-family: 'Roboto';
-            }
-            #app-wrapper {
-                margin: 0 auto;
-                width: 1100px;
-            }
-			/* Restaurant */
-			.restaurant-title {
-				font-size: 2rem;
-				font-weight: 400;
-			}
-			.restaurant-subtitle {
-				font-size: 1.5rem;
-				font-weight: 400;
-			}
-            .table {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: 1fr 1fr;
-                grid-template-areas:
-                "row1 row1 row1 row1"
-                "row2 row2 row2 row2";
-                border: 3px solid red;
-                padding: 20px 10px;
-            }
-			/* Tables */
-            [class^="cell-row-"] {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                flex-wrap: wrap;
-            }
-            .cell-item,
-            .occupied {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                border: 1px solid black;
-                margin: 10px;
-                padding: 10px;
-                width: 100%;
-            }
-            .occupied {
-                background-color: #faf4fb;
-                border: 1px solid #ddd1ee;
-            }
-            .btn {
-                background-color: #e2c1e8;
-                border: none;
-                color: #673ab7;
-                padding: 15px 32px;
-                text-align: center;
-                text-decoration: none;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 16px;
-                margin: 4px 2px;
-                cursor: pointer;
-                width: 100px;
-                height: 30px;
-            }
-			/* Add Table */
-			.add-table {
-				margin-top: 60px;
-				padding: 20px;
-				border: 1px solid #ddd1ee;
-				background-color: #faf4fb;
-			}
-			.add-table-title {
-				font-size: 1.5rem;
-				font-weight: 400;
-				margin-bottom: 10px;
-			}
-			.add-table-content {
-				font-size: 0.8rem;
-				font-weight: 400;
-				margin: 0;
-			}
-			.add-table form {
-				display: flex;
-				flex-direction: column;
-				justify-content: center;
-				align-items: center;
-			}
-			.add-table input {
-				margin: 10px 20px;
-				padding: 10px 0;
-				width: 100%;
-			}
-			.add-table .btn-submit {
-				background-color: #e2c1e8;
-				border: none;
-				color: #673ab7;
-				padding: 15px 32px;
-				text-align: center;
-				text-decoration: none;
-				align-self: flex-end;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				font-size: 16px;
-				margin: 4px 2px;
-				cursor: pointer;
-				width: 100px;
-				height: 30px;
-			}
-        </style>
-		<title>
-			Restaurant Manager
-		</title>
-	</head>
-	<body>
-		<div id="app">
-			<div id="app-wrapper">
-				<x-restaurant :cells="cells"></x-restaurant>
-			</div>
-		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-		<script>
-			Vue.component('x-table', {
-            props: ['cell'],
-			methods: {
-				async untilAvailable() {
-                    // This assumes that each cell has a method to calculate its countdown based on the current time and availableTime
-                    return new Promise((resolve) => {
-                        const checkAvailability = setInterval(() => {
-                            if (!this.cell.occupied) {
-                                clearInterval(checkAvailability);
-                                resolve();
-                            }
-                        }, 1000); // Check every second
-                    });
-                },
-                async evict() {
-                    this.cell.occupied = false;
-                    this.cell.numberOfOccupants = null;
-                    this.cell.availableTime = null;
-                    this.cell.timeDifference = null;
-                    this.save('restaurantState');
-                },
-			},
-            template: `
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="main.css" />
+    <style>
+      * {
+        font-family: "Roboto";
+      }
+      #app-wrapper {
+        margin: 0 auto;
+        width: 1100px;
+      }
+      /* Restaurant */
+      .restaurant-title {
+        font-size: 2rem;
+        font-weight: 400;
+      }
+      .restaurant-subtitle {
+        font-size: 1.5rem;
+        font-weight: 400;
+      }
+      .table {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr 1fr;
+        grid-template-areas:
+          "row1 row1 row1 row1"
+          "row2 row2 row2 row2";
+        border: 3px solid red;
+        padding: 20px 10px;
+      }
+      /* Tables */
+      [class^="cell-row-"] {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .cell-item,
+      .occupied {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid black;
+        margin: 10px;
+        padding: 10px;
+        width: 100%;
+      }
+      .occupied {
+        background-color: #faf4fb;
+        border: 1px solid #ddd1ee;
+      }
+      .btn {
+        background-color: #e2c1e8;
+        border: none;
+        color: #673ab7;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+      }
+      /* Add Table */
+      .add-table {
+        margin-top: 60px;
+        padding: 20px;
+        border: 1px solid #ddd1ee;
+        background-color: #faf4fb;
+      }
+      .add-table-title {
+        font-size: 1.5rem;
+        font-weight: 400;
+        margin-bottom: 10px;
+      }
+      .add-table-content {
+        font-size: 0.8rem;
+        font-weight: 400;
+        margin: 0;
+      }
+      .add-table form {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .add-table input {
+        margin: 10px 20px;
+        padding: 10px 0;
+        width: 100%;
+      }
+      .add-table .btn-submit {
+        background-color: #e2c1e8;
+        border: none;
+        color: #673ab7;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        align-self: flex-end;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+      }
+    </style>
+    <title>Restaurant Manager</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="app-wrapper">
+        <x-restaurant :cells="cells"></x-restaurant>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+      Vue.component("x-table", {
+        props: ["cell"],
+        methods: {
+          async untilAvailable() {
+            // This assumes that each cell has a method to calculate its countdown based on the current time and availableTime
+            return new Promise((resolve) => {
+              const checkAvailability = setInterval(() => {
+                if (!this.cell.occupied) {
+                  clearInterval(checkAvailability);
+                  resolve();
+                }
+              }, 1000); // Check every second
+            });
+          },
+          async evict() {
+            this.cell.occupied = false;
+            this.cell.numberOfOccupants = null;
+            this.cell.availableTime = null;
+            this.cell.timeDifference = null;
+            this.save("restaurantState");
+          },
+        },
+        template: `
                 <div :class="{'cell-item': !cell.occupied, 'occupied': cell.occupied}">
                     <p v-if="cell.occupied">Occupied By {{cell.numberOfOccupants}}</p>
                     <p v-if="cell.occupied">(free in {{cell.timeDifference}})</p>
@@ -162,101 +160,100 @@
                         @click="evict()"
                     >Evict</button>
                 </div>
-				`
-			});
+				`,
+      });
 
-			Vue.component('x-restaurant', {
-            props: ['cells'],
-			data: function() {
-				return {
-					newTable: {
-						occupants: null,
-						availableTime: null,
-						message: null
-					},
-					value: null,
-				}
-			},
-            methods: {
-                getClassName(cell) {
-                    return `cell-row-${Math.ceil(cell.id / 4)}`;
-                },
-				async findAvailableTable() {
-                    const suitableTable = await this.cells.find(cell => !cell.occupied && cell.capacity >= this.newTable.occupants);
-                    return suitableTable;
-                },
-                async assignBookingToTable(availableTable) {
-                    availableTable.occupied = true;
-                    availableTable.numberOfOccupants = this.newTable.occupants;
-                    availableTable.availableTime = this.newTable.availableTime;
-                    this.save('restaurantState');
-                },
-                showMessageIfAny() {
-                    if (this.newTable.message) {
-                        alert(this.newTable.message);
-                    }
-                },
-                resetForm() {
-                    this.newTable = {
-                        occupants: null,
-                        availableTime: null,
-                        message: null
-                    };
-                },
-                async isTableAvailable() {
-                    return await this.cells.capacity >= this.newTable.numberOfOccupants;
-                },
-                async awaitTable(partySize){
-                    return new Promise(resolve => {
-                        const checkInterval = setInterval(async () => {
-                            const availableTable = await this.findAvailableTable(partySize);
-                            if (availableTable) {
-                                clearInterval(checkInterval);
-                                resolve(availableTable); // Resolve the promise with the available table
-                                alert(`Table for ${this.newTable.occupants} is available now.`);
-                            }
-                        }, 2000); // Check every second (1000 milliseconds)
-                    });
-                },
-                reserveTable() {
-                    this.resetForm();
-                    alert('Table reserved.');
-                },
-                async addTable() {
-                    const availableTable = await this.findAvailableTable(this.newTable.capacity);
-                    if (!availableTable) {
-                        alert("Sorry, no tables available for the specified party size at the moment.");
-                        await this.awaitTable(this.newTable.occupants);
-                    }
-                    else {
-                        // Proceed with assigning the table
-                        const assignTable = await this.assignBookingToTable(availableTable);
-                        if (assignTable) {
-                            alert(`Table for ${this.newTable.occupants} has been successfully allocated.`);
-                            // Save the state of the table
-                            await this.save(assignTable);
-                        } else {
-                            await this.awaitTable(this.newTable.occupants);
-                        }
-                    }
-                    // Reset form and other UI elements as necessary
-                    this.resetForm();
-                },
-				async save(key) {
-					await localStorage.setItem(key, JSON.stringify(this.$data));
-				},
-				async load(key) {
-					const savedState = localStorage.getItem(key);
-					if (savedState) {
-						Object.assign(this.$data, JSON.parse(savedState));
-					}
-				},
+      Vue.component("x-restaurant", {
+        props: ["cells"],
+        data: function () {
+          return {
+            newTable: {
+              occupants: null,
+              availableTime: null,
+              message: null,
             },
-            created() {
-				this.load('restaurantState');
-                this.resetForm();
-			},
-			template: `
+            value: null,
+          };
+        },
+        methods: {
+          getClassName(cell) {
+            return `cell-row-${Math.ceil(cell.id / 4)}`;
+          },
+          async findAvailableTable() {
+            const suitableTable = await this.cells.find((cell) => !cell.occupied && cell.capacity >= this.newTable.occupants);
+            return suitableTable;
+          },
+          async assignBookingToTable(availableTable) {
+            availableTable.occupied = true;
+            availableTable.numberOfOccupants = this.newTable.occupants;
+            availableTable.availableTime = this.newTable.availableTime;
+            this.save("restaurantState");
+          },
+          showMessageIfAny() {
+            if (this.newTable.message) {
+              alert(this.newTable.message);
+            }
+          },
+          resetForm() {
+            this.newTable = {
+              occupants: null,
+              availableTime: null,
+              message: null,
+            };
+          },
+          async isTableAvailable() {
+            return (await this.cells.capacity) >= this.newTable.numberOfOccupants;
+          },
+          async awaitTable(partySize) {
+            return new Promise((resolve) => {
+              const checkInterval = setInterval(async () => {
+                const availableTable = await this.findAvailableTable(partySize);
+                if (availableTable) {
+                  clearInterval(checkInterval);
+                  resolve(availableTable); // Resolve the promise with the available table
+                  alert(`Table for ${this.newTable.occupants} is available now.`);
+                }
+              }, 2000); // Check every second (1000 milliseconds)
+            });
+          },
+          reserveTable() {
+            this.resetForm();
+            alert("Table reserved.");
+          },
+          async addTable() {
+            const availableTable = await this.findAvailableTable(this.newTable.capacity);
+            if (!availableTable) {
+              alert("Sorry, no tables available for the specified party size at the moment.");
+              await this.awaitTable(this.newTable.occupants);
+            } else {
+              // Proceed with assigning the table
+              const assignTable = await this.assignBookingToTable(availableTable);
+              if (assignTable) {
+                alert(`Table for ${this.newTable.occupants} has been successfully allocated.`);
+                // Save the state of the table
+                await this.save(assignTable);
+              } else {
+                await this.awaitTable(this.newTable.occupants);
+              }
+            }
+            // Reset form and other UI elements as necessary
+            this.resetForm();
+          },
+          async save(key) {
+            await localStorage.setItem(key, JSON.stringify(this.$data));
+          },
+          async load(key) {
+            const savedState = localStorage.getItem(key);
+            if (savedState) {
+              Object.assign(this.$data, JSON.parse(savedState));
+            }
+          },
+        },
+        created() {
+          this.load("restaurantState");
+          this.resetForm();
+        },
+        template: `
                 <div id="x-restaurant">
                     <h1 class="restaurant-title">Restaurant Manager</h1>
                     <h3 class="restaurant-subtitle">Tables Overview</h3>
@@ -276,122 +273,122 @@
 						</form>
 					</div>
                 </div>
-				`
-			});
+				`,
+      });
 
-			const app = new Vue({
-				el: '#app',
-				el: '#app',
-                data: {
-                    cells: [
-                        {
-                            id: 1,
-                            name: 'Table 1',
-                            numberOfOccupants: null,
-                            occupied: false,
-                            capacity: 10,
-                            availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 2,
-                            name: 'Table 2',
-                            numberOfOccupants: null,
-                            occupied: false,
-                            capacity: 8,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 3,
-                            name: 'Table 3',
-                            numberOfOccupants: 6,
-                            occupied: true,
-                            capacity: 10,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 4,
-                            name: 'Table 4',
-                            numberOfOccupants: 4,
-                            occupied: true,
-                            capacity: 6,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 5,
-                            name: 'Table 5',
-                            numberOfOccupants: null,
-                            occupied: false,
-                            capacity: 2,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 6,
-                            name: 'Table 6',
-                            numberOfOccupants: null,
-                            occupied: false,
-                            capacity: 6,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 7,
-                            name: 'Table 7',
-                            numberOfOccupants: null,
-                            occupied: false,
-                            capacity: 4,
-                            availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        },
-                        {
-                            id: 8,
-                            name: 'Table 8',
-                            numberOfOccupants: null,
-                            occupied: true,
-                            capacity: 12,
-                            availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
-                            timeDifference: null
-                        }
-                    ]
-                },
-				methods: {
-                    async getTimeDifferenceInMilliseconds(cell) {
-                        const now = new Date();
-                        return new Date(cell.availableTime) - now;
-                    },
-                    async convertMillisecondsToTimeFormat(diffInMilliseconds) {
-                        const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
-                        const diffInMinutes = Math.floor(diffInSeconds / 60);
-                        return diffInMinutes % 60 + ' : ' + diffInSeconds % 60;
-                    },
-                    async handleZeroOrNegativeTimeDifference(cell) {
-                        cell.occupied = false;
-                        return '0 : 0';
-                    },
-                    async getTimeDifference(cell) {
-                        if (!cell.availableTime) {
-                            return 'Loading...';
-                        }
-                        const diffInMilliseconds = await this.getTimeDifferenceInMilliseconds(cell);
-                        if (diffInMilliseconds <= 0) {
-                            return await this.handleZeroOrNegativeTimeDifference(cell);
-                        }
-                        return await this.convertMillisecondsToTimeFormat(diffInMilliseconds);
-                    }
-                },
-                created() {
-                    setInterval(async () => {
-                        for (const cell of this.cells) {
-                            cell.timeDifference = await this.getTimeDifference(cell);
-                        }
-                    }, 1000);
-                },
-				delimiters: ['{', '}'],
-			});
-		</script>
-	</body>
+      const app = new Vue({
+        el: "#app",
+        el: "#app",
+        data: {
+          cells: [
+            {
+              id: 1,
+              name: "Table 1",
+              numberOfOccupants: null,
+              occupied: false,
+              capacity: 10,
+              availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 2,
+              name: "Table 2",
+              numberOfOccupants: null,
+              occupied: false,
+              capacity: 8,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 3,
+              name: "Table 3",
+              numberOfOccupants: 6,
+              occupied: true,
+              capacity: 10,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 4,
+              name: "Table 4",
+              numberOfOccupants: 4,
+              occupied: true,
+              capacity: 6,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 5,
+              name: "Table 5",
+              numberOfOccupants: null,
+              occupied: false,
+              capacity: 2,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 6,
+              name: "Table 6",
+              numberOfOccupants: null,
+              occupied: false,
+              capacity: 6,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 7,
+              name: "Table 7",
+              numberOfOccupants: null,
+              occupied: false,
+              capacity: 4,
+              availableTime: "Sun Mar 03 2024 22:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+            {
+              id: 8,
+              name: "Table 8",
+              numberOfOccupants: null,
+              occupied: true,
+              capacity: 12,
+              availableTime: "Sun Mar 03 2024 23:43:53 GMT+0200 (Eastern European Standard Time)",
+              timeDifference: null,
+            },
+          ],
+        },
+        methods: {
+          async getTimeDifferenceInMilliseconds(cell) {
+            const now = new Date();
+            return new Date(cell.availableTime) - now;
+          },
+          async convertMillisecondsToTimeFormat(diffInMilliseconds) {
+            const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            return (diffInMinutes % 60) + " : " + (diffInSeconds % 60);
+          },
+          async handleZeroOrNegativeTimeDifference(cell) {
+            cell.occupied = false;
+            return "0 : 0";
+          },
+          async getTimeDifference(cell) {
+            if (!cell.availableTime) {
+              return "Loading...";
+            }
+            const diffInMilliseconds = await this.getTimeDifferenceInMilliseconds(cell);
+            if (diffInMilliseconds <= 0) {
+              return await this.handleZeroOrNegativeTimeDifference(cell);
+            }
+            return await this.convertMillisecondsToTimeFormat(diffInMilliseconds);
+          },
+        },
+        created() {
+          setInterval(async () => {
+            for (const cell of this.cells) {
+              cell.timeDifference = await this.getTimeDifference(cell);
+            }
+          }, 1000);
+        },
+        delimiters: ["{", "}"],
+      });
+    </script>
+  </body>
 </html>
