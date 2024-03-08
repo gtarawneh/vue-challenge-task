@@ -149,18 +149,18 @@
           },
         },
         template: `
-                <div :class="{'cell-item': !cell.occupied, 'occupied': cell.occupied}">
-                    <p v-if="cell.occupied">Occupied By {{cell.numberOfOccupants}}</p>
-                    <p v-if="cell.occupied">(free in {{cell.timeDifference}})</p>
-                    <p v-else>Table Available</p>
-                    <p v-if="!cell.occupied">(Capacity: {{ cell.capacity }})</p>
-                    <button
-                        class="btn"
-                        v-if="cell.occupied" 
-                        @click="evict()"
-                    >Evict</button>
-                </div>
-				`,
+            <div :class="{'cell-item': !cell.occupied, 'occupied': cell.occupied}">
+                <p v-if="cell.occupied">Occupied By {{cell.numberOfOccupants}}</p>
+                <p v-if="cell.occupied">(free in {{cell.timeDifference}})</p>
+                <p v-else>Table Available</p>
+                <p v-if="!cell.occupied">(Capacity: {{ cell.capacity }})</p>
+                <button
+                    class="btn"
+                    v-if="cell.occupied" 
+                    @click="evict()"
+                >Evict</button>
+            </div>
+        `,
       });
 
       Vue.component("x-restaurant", {
@@ -272,7 +272,8 @@
                         <button type="submit" class="btn-submit">Add</button>
                     </form>
                 </div>
-            </div>`,
+            </div>
+        `,
       });
 
       const app = new Vue({
