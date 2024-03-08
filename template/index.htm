@@ -359,31 +359,28 @@
                     ]
                 },
 				methods: {
-                async getTimeDifferenceInMilliseconds(cell) {
-                    const now = new Date();
-                    return new Date(cell.availableTime) - now;
-                },
-                async convertMillisecondsToTimeFormat(diffInMilliseconds) {
-                    const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
-                    const diffInMinutes = Math.floor(diffInSeconds / 60);
-                    return diffInMinutes % 60 + ' : ' + diffInSeconds % 60;
-                },
-                async handleZeroOrNegativeTimeDifference(cell) {
-                    cell.occupied = false;
-                    return '0 : 0';
-                },
-                async getTimeDifference(cell) {
-                    if (!cell.availableTime) {
-                        return 'Loading...';
-                    }
-
-                    const diffInMilliseconds = await this.getTimeDifferenceInMilliseconds(cell);
-
-                    if (diffInMilliseconds <= 0) {
-                        return await this.handleZeroOrNegativeTimeDifference(cell);
-                    }
-
-                    return await this.convertMillisecondsToTimeFormat(diffInMilliseconds);
+                    async getTimeDifferenceInMilliseconds(cell) {
+                        const now = new Date();
+                        return new Date(cell.availableTime) - now;
+                    },
+                    async convertMillisecondsToTimeFormat(diffInMilliseconds) {
+                        const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+                        const diffInMinutes = Math.floor(diffInSeconds / 60);
+                        return diffInMinutes % 60 + ' : ' + diffInSeconds % 60;
+                    },
+                    async handleZeroOrNegativeTimeDifference(cell) {
+                        cell.occupied = false;
+                        return '0 : 0';
+                    },
+                    async getTimeDifference(cell) {
+                        if (!cell.availableTime) {
+                            return 'Loading...';
+                        }
+                        const diffInMilliseconds = await this.getTimeDifferenceInMilliseconds(cell);
+                        if (diffInMilliseconds <= 0) {
+                            return await this.handleZeroOrNegativeTimeDifference(cell);
+                        }
+                        return await this.convertMillisecondsToTimeFormat(diffInMilliseconds);
                     }
                 },
                 created() {
