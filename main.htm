@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Restaurant Table Management with Async/Await</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+      }
+      #app-wrapper {
+        margin: 0 auto;
+        width: 900px;
+      }
+      .tables {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr 1fr;
+        grid-template-areas:
+          "row1 row1 row1 row1"
+          "row2 row2 row2 row2";
+        border: 3px solid red;
+        padding: 20px 10px;
+        gap: 10px;
+      }
+      .table {
+        width: 150px;
+        margin: 15px;
+        padding: 10px;
+        border: 1px solid #000;
+      }
+      .available {
+        background-color: #fff;
+      }
+      .occupied {
+        background-color: #faf4fb;
+        border: 3px solid #ddd1ee;
+        color: #673ab7;
+      }
+      .table-info {
+        margin: 10px 0;
+      }
+      .add-table {
+        margin-top: 60px;
+        padding: 20px;
+        border: 1px solid #ddd1ee;
+        background-color: #faf4fb;
+      }
+      .add-table form {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .add-table input {
+        margin: 10px;
+        padding: 10px 0;
+        width: 90%;
+      }
+      button {
+        margin-top: 10px;
+      }
+      .error {
+        color: red;
+      }
+      .evict {
+        background-color: #e2c1e8;
+        border: none;
+        color: #673ab7;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        width: 100%;
+        height: 30px;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #09f;
+        animation: spin 1s ease infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="app-wrapper">
+        <div v-if="isLoading" class="loading-indicator">Allocating table, please wait...</div>
+        <div class="restaurant">
+          <h1>Restaurant Table Management</h1>
+          <h2>Tables Overview</h2>
+          <x-restaurant class="tables" ref="restaurant" :tables="tables" @update-tables="saveState"></x-restaurant>
+        </div>
+        <form class="add-table" @submit.prevent="attemptToAllocateTable">
+          <label for="partySize">Party Size:</label>
+          <input type="number" id="partySize" v-model.number="partySize" placeholder="Number of People (non-zero positive integer)" required min="1" max="12" />
+          <input type="datetime-local" v-model="availableTime" placeholder="Duration of stay in seconds (positive number)" min="1" />
+          <input type="text" placeholder="Fuss message if evicted (text)" />
+          <p class="error" v-if="errorMessage">{{ errorMessage }}</p>
+          <button type="submit" class="btn btn-primary" :disabled="isLoading">
+            <div v-if="isLoading" class="spinner"></div>
+            <div v-else>Add</div>
+          </button>
+          <p class="error" v-if="showError">Please enter a valid party size.</p>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+      Vue.component("x-table", {
+        props: ["table"],
+        computed: {
+          // Computes the availability status to display
+          availabilityStatus() {
+            return this.table.occupied ? "Occupied by " + this.table.occupants : "Table Available";
+          },
+          // Display when the table will become available next, without dynamic countdowns
+          availableAt() {
+            if (!this.table.availableTime || !this.table.occupied) return "";
+            const availableTime = new Date(this.table.availableTime);
+            return "Available at " + availableTime.toLocaleTimeString();
+          },
+        },
+        methods: {
+          // Simulate an async wait until the table becomes available
+          async untilAvailable() {
+            if (!this.table.occupied) return Promise.resolve();
+            return new Promise((resolve) => {
+              const unwatch = this.$watch("table.occupied", (newValue) => {
+                if (!newValue) {
+                  unwatch();
+                  resolve();
+                }
+              });
+            });
+          },
+        },
+        template: `
+            <div class="table" :class="{available: !table.occupied, occupied: table.occupied}">
+                <div class="table-info">{{ availabilityStatus }}</div>
+                <div class="table-info" v-if="table.occupied">
+                    {{ table.availableTime }}
+                </div>
+                <button class="evict" v-if="table.occupied" @click="$emit('evict', table)">Evict</button>
+            </div>
+        `,
+      });
+
+      Vue.component("x-restaurant", {
+        props: ["tables"],
+        methods: {
+          evictTable(table) {
+            console.log("Evicting occupants...");
+            table.occupied = false;
+            table.occupants = 0;
+            this.$emit("update-tables");
+            this.markAsAvailable(table);
+          },
+          markAsAvailable(table) {
+            // Logic to mark the table as available...
+            this.$emit("tableAvailable", this.table);
+            alert(`Table size ${table.capacity} is now available!`);
+          },
+          handleTableAvailable() {
+            // Define your method here...
+          },
+          // Adjusted to loop through tables and find an available one
+          async awaitTable(partySize) {
+            let resolveFunction;
+            const promise = new Promise((resolve) => {
+              resolveFunction = resolve;
+            });
+            this.waitingQueue.push({ partySize, resolve: resolveFunction });
+
+            // Periodically check for table availability
+            this.checkForAvailableTables();
+
+            return promise;
+          },
+        },
+        template: `
+        <div>
+            <x-table v-for="(table, index) in tables" :key="index" :table="table" @evict="evictTable(table)"></x-table>
+        </div>
+    `,
+      });
+
+      new Vue({
+        el: "#app",
+        data: {
+          partySize: 1,
+          availableTime: 0,
+          showError: false,
+          tables: [],
+          waitingQueue: [],
+          isLoading: false,
+          errorMessage: "",
+        },
+        mounted() {
+          this.loadState();
+          console.log(this.table);
+          setInterval(() => {
+            this.updateTableCountdowns();
+          }, 1000);
+        },
+        methods: {
+          validatePartySize(size) {
+            if (size < 1 || size > 12 || !Number.isInteger(size)) {
+              this.errorMessage = "Please enter a valid party size (1-12).";
+              return false;
+            }
+            this.errorMessage = "";
+            return true;
+          },
+          showSuccessToast(message) {
+            // Implementation to show success message
+          },
+          showErrorToast(message) {
+            // Implementation to show error message
+          },
+          checkForAvailableTables() {
+            const now = new Date();
+            this.waitingQueue = this.waitingQueue.filter((waitingParty) => {
+              const availableTable = this.tables.find((table) => !table.occupied && table.capacity >= waitingParty.partySize && new Date(waitingParty.availableTime) <= now);
+              if (availableTable) {
+                // Allocate table
+                availableTable.occupied = true;
+                availableTable.occupants = waitingParty.partySize;
+                availableTable.availableTime = availableTime;
+                // Resolve the promise
+                waitingParty.resolve(availableTable);
+                return false; // Remove party from the waiting queue
+              }
+              return true; // Keep party in the waiting queue if no table was found
+            });
+          },
+          updateTableCountdowns() {
+            const now = new Date();
+            this.tables.forEach((table) => {
+              if (table.availableTime) {
+                const endTime = new Date(table.availableTime);
+                let timeDiff = endTime - now;
+
+                if (timeDiff < 0) {
+                  // Time is up, make the table available again
+                  table.occupied = false;
+                  table.availableTime = null;
+                  // Additional actions as needed (e.g., notify user, update UI)
+                } else {
+                  // Calculate and format countdown
+                  let minutes = Math.floor(timeDiff / 1000 / 60);
+                  let seconds = Math.floor((timeDiff / 1000) % 60);
+                  table.countdown = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+                }
+              } else {
+                table.countdown = ""; // Clear countdown for available tables
+              }
+            });
+          },
+          async attemptToAllocateTable() {
+            if (!this.validatePartySize(this.partySize)) {
+              this.showError = true;
+              this.isLoading = false;
+              return;
+            }
+            this.showError = false;
+            this.isLoading = true;
+
+            // Attempt to allocate a table based on party size
+            const allocationPromise = new Promise((resolve) => {
+              const availableTable = this.tables.find((table) => !table.occupied && table.capacity >= this.partySize);
+              if (availableTable) {
+                // If a table is immediately available, allocate it
+                availableTable.occupied = true;
+                availableTable.occupants = this.partySize;
+                availableTable.availableTime = this.updateTableCountdowns();
+                resolve(availableTable);
+              } else {
+                // Otherwise, add to the waiting queue
+                this.waitingQueue.push({
+                  partySize: this.partySize,
+                  resolve: resolve, // Pass the resolve function to allow allocation later
+                });
+              }
+            });
+
+            allocationPromise
+              .then((table) => {
+                // Handle successful table allocation
+                alert(`Table for ${this.partySize} allocated: Table capacity ${table.capacity}`);
+                this.isLoading = false;
+                this.saveState();
+              })
+              .catch((error) => {
+                // Handle any errors
+                console.error("Error allocating table:", error);
+                this.isLoading = false;
+              });
+          },
+          saveState() {
+            localStorage.setItem("tables", JSON.stringify(this.tables));
+          },
+          loadState() {
+            const savedTables = localStorage.getItem("tables");
+            if (savedTables) {
+              this.tables = JSON.parse(savedTables);
+            } else {
+              this.tables = Array.from({ length: 8 }, (_, index) => ({
+                id: index,
+                capacity: [10, 8, 10, 6, 2, 6, 4, 12][index],
+                occupied: false,
+                occupants: 0,
+                availableTime: null,
+              }));
+            }
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
